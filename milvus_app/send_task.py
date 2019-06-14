@@ -2,11 +2,13 @@ import sys
 sys.path.append('..')
 import logging
 from __init__ import celery_app
+from celery import group, chain, signature
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 celery_app.config_from_object('milvus_app.config')
+from milvus_app import tasks
 
 # celery_app.conf.update(
 #     CELERY_TASK_SERIALIZER='json',
@@ -30,12 +32,33 @@ celery_app.config_from_object('milvus_app.config')
 #     }
 # )
 
+def calculate():
+    rs = []
+    for i in range(100):
+        final = tasks.do_reduce.s()
+        final_result = final.freeze()
+
+        chain(tasks.get_data.s(), tasks.allocate.s(tasks.do_map.s(-2), final))()
+        rs.append(final_result)
+    for f in rs:
+        r = f.get()
+        logger.error(r)
+
 def main():
+    calculate()
+    return
     for i in range(2):
         logger.debug('Send task query')
-        # resp = celery_app.send_task('milvus_app.tasks.query', ('1',2,3,4))
-        resp = celery_app.send_task('milvus_app.tasks.query', ('test_group',2,3,4))
-        logger.error(resp.get())
+        # celery.send_task(
+        #     signature('milvus_app.tasks.query')
+        # )
+        resp = tasks.query.delay('test_group', 2, 3, 4).get()
+        if not resp.result:
+            logger.error('No result')
+            continue
+        group_task = group(tasks.subquery.s(i) for i in resp.result)
+        r = group_task(3,4).get()
+        logger.error(r)
 
 if __name__ == '__main__':
     main()
