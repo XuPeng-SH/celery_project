@@ -15,3 +15,6 @@ def query(table_id, query_vectors, topk, date_range):
             table_id))
         logger.error(response)
         return response
+
+    files = table.files_to_search()
+    return QueryResponse(result=[f.id for f in files])

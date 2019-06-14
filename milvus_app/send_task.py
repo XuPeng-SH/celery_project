@@ -33,9 +33,9 @@ celery_app.config_from_object('milvus_app.config')
 def main():
     for i in range(2):
         logger.debug('Send task query')
-        resp = celery_app.send_task('milvus_app.tasks.query', ('1',2,3,4))
+        # resp = celery_app.send_task('milvus_app.tasks.query', ('1',2,3,4))
+        resp = celery_app.send_task('milvus_app.tasks.query', ('test_group',2,3,4))
         logger.error(resp.get())
-        # celery_app.send_task('milvus_app.tasks.query', ('test_group',2,3,4))
 
 if __name__ == '__main__':
     main()
