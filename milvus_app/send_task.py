@@ -26,7 +26,7 @@ def execute_vector_query(table_id, vectors, topK):
             | tasks.schedule_query.s(tasks.query_file.s(vectors, topK), reducer)
         )()
 
-    propagate_chain_get(r, timeout=2)
+    propagate_chain_get(r)
 
     return reducer_result
 
@@ -42,6 +42,8 @@ def main():
             logger.error(result.get(propagate=True, follow_parents=True))
     except Exception as exc:
         logger.error(exc)
+        logger.error(exc.message)
+        logger.error(exc.code)
 
 if __name__ == '__main__':
     main()
