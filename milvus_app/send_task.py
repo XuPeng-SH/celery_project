@@ -3,6 +3,7 @@ sys.path.append('..')
 import logging
 from __init__ import celery_app
 from celery import group, chain, signature
+from milvus_app.utils import time_it
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -30,19 +31,21 @@ def execute_vector_query(table_id, vectors, topK):
 
     return reducer_result
 
+@time_it
 def main():
     results = []
     try:
-        for table_id in ['test_group']:
+        for table_id in ['test_group']*100:
         # for table_id in ['test_group', 'xxxx']:
-            async_result = execute_vector_query(table_id, [], 10)
+            async_result = execute_vector_query(table_id, [], 20)
             results.append(async_result)
         for result in results:
             ret = result.get(propagate=True, follow_parents=True)
-            for r in ret.query_results:
-                print(r)
+            # for r in ret.query_results:
+            #     print(r)
     except Exception as exc:
         logger.exception('')
 
 if __name__ == '__main__':
-    main()
+    _, duration = main()
+    logger.info('duration={}'.format(duration))

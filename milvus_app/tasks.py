@@ -1,3 +1,4 @@
+from random import randint
 from functools import reduce
 from celery import maybe_signature, chord
 from celery.utils.log import get_task_logger
@@ -22,22 +23,22 @@ def get_queryable_files(table_id, date_range=None):
     files = table.files_to_search()
     result = [f.id for f in files]
 
-    logger.error('Result={}'.format(result))
-
+    # logger.error('Result={}'.format(result))
     return result
 
 @celery_app.task
 def query_file(file_id, vectors, topK):
     logger.error('Querying file {}'.format(file_id))
-    return '{}.result'.format(file_id)
+
+    return TopKQueryResultFactory()
 
 @celery_app.task
 def merge_query_results(to_be_merged, topK):
     if not to_be_merged or topK <= 0:
         return None
 
-    to_be_merged = [TopKQueryResultFactory() for _ in range(10)]
-    topK = 200
+    # to_be_merged = [TopKQueryResultFactory() for _ in range(10)]
+    # topK = 200
 
     results = []
     for result in to_be_merged:
