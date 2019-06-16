@@ -1,10 +1,13 @@
 from functools import reduce
 from celery import maybe_signature, chord
 from celery.utils.log import get_task_logger
+from milvus.client.Abstract import TopKQueryResult, QueryResult
+
 from milvus_app import celery_app, db
 from milvus_app.models import Table
 
 from milvus_app.exceptions import TableNotFoundException
+from milvus_app.factories import TopKQueryResultFactory
 
 logger = get_task_logger(__name__)
 
@@ -29,14 +32,19 @@ def query_file(file_id, vectors, topK):
     return '{}.result'.format(file_id)
 
 @celery_app.task
-def merge_query_results(results, topK):
-    if not results:
+def merge_query_results(to_be_merged, topK):
+    if not to_be_merged or topK <= 0:
         return None
-    logger.error('Merging results: {}'.format(results))
-    ret = reduce(lambda x, y: '{}{}'.format(x, y),
-            map(lambda x: '--------{}-------\n'.format(x), results))
-    logger.error(ret)
-    return ret
+
+    to_be_merged = [TopKQueryResultFactory() for _ in range(10)]
+    topK = 200
+
+    results = []
+    for result in to_be_merged:
+        results.extend(result.query_results)
+        results = sorted(results, key=lambda x: x.score)[:topK]
+
+    return TopKQueryResult(query_results=results)
 
 @celery_app.task(bind=True)
 def schedule_query(self, file_ids, mapper, reducer):

@@ -33,11 +33,14 @@ def execute_vector_query(table_id, vectors, topK):
 def main():
     results = []
     try:
-        for table_id in ['test_group', 'xxxx']:
+        for table_id in ['test_group']:
+        # for table_id in ['test_group', 'xxxx']:
             async_result = execute_vector_query(table_id, [], 10)
             results.append(async_result)
         for result in results:
-            logger.info(result.get(propagate=True, follow_parents=True))
+            ret = result.get(propagate=True, follow_parents=True)
+            for r in ret.query_results:
+                print(r)
     except Exception as exc:
         logger.exception('')
 

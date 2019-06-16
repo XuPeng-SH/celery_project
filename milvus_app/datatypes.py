@@ -1,3 +1,4 @@
+from milvus.client.Abstract import TopKQueryResult, QueryResult
 
 class QueryResponse:
     __type__ = '__QueryResponse__'
@@ -30,3 +31,40 @@ class QueryResponse:
     @property
     def has_error(self):
         return self.code != 0
+
+class QueryResultHelper:
+    __type__ = '__QueryResult__'
+    source_class = QueryResult
+
+    def __init__(self, source):
+        self.score = source.score
+        self.id = source.id
+
+    def to_dict(self):
+        return {
+            '__type__': self.__class__.__type__,
+            'score': self.score,
+            'id': self.id,
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls.source_class(score=d['score'], id=d['id'])
+
+
+class TopKQueryResultHelper:
+    __type__ = '__TopKQueryResult__'
+    source_class = TopKQueryResult
+
+    def __init__(self, source):
+        self.query_results = source.query_results
+
+    def to_dict(self):
+        return {
+            '__type__': self.__class__.__type__,
+            'query_results': [QueryResultHelper(result).to_dict() for result  in self.query_results]
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls.source_class(query_results=d['query_results'])
