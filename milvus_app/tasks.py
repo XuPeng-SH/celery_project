@@ -1,6 +1,5 @@
 from functools import reduce
-from celery.exceptions import Reject
-from celery import group, maybe_signature, chord, Task
+from celery import maybe_signature, chord
 from celery.utils.log import get_task_logger
 from milvus_app import celery_app, db
 from milvus_app.models import Table, TableFile
@@ -57,30 +56,3 @@ def schedule_query(self, files_response, mapper, reducer):
     logger.error(scheduled)
 
     return scheduled
-
-@celery_app.task
-def get_data(*args, **kwargs):
-    return [3,4,5,6]
-
-@celery_app.task
-def do_map(n, index):
-    logger.error('doing map {} {}'.format(n, index))
-    result = n * index
-    logger.error('result={}'.format(result))
-    return result
-
-@celery_app.task
-def do_reduce(results):
-    logger.error('doing reduce {}'.format(results))
-    return sum(results)
-
-@celery_app.task(bind=True)
-def allocate(self, items, mapper, reducer):
-    mapper = maybe_signature(mapper, self.app)
-    reducer = maybe_signature(reducer, self.app)
-    st = []
-    for item in items:
-        st.append(mapper.clone(args=(item,)))
-    mapreduce = chord(st)(reducer)
-    logger.error(mapreduce)
-    return chord(st)(reducer)

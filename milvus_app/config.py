@@ -5,11 +5,6 @@ CELERY_IMPORTS = ['milvus_app']
 CELERY_CREATE_MISSING_QUEUES = False
 
 CELERY_ROUTES={
-    'milvus_app.tasks.get_data' : {'queue': 'for_test'},
-    'milvus_app.tasks.do_map' : {'queue': 'for_test'},
-    'milvus_app.tasks.do_reduce' : {'queue': 'for_test'},
-    'milvus_app.tasks.allocate' : {'queue': 'for_test'},
-
     'milvus_app.tasks.query_file' : {'queue': 'for_query'},
     'milvus_app.tasks.schedule_query' : {'queue': 'for_query'},
     'milvus_app.tasks.get_queryable_files' : {'queue': 'for_query'},
@@ -22,8 +17,5 @@ CELERY_QUEUES={
     },
     'for_query': {
         'exchange': 'for_query'
-    },
-    'for_test': {
-        'exchange': 'for_test'
     },
 }

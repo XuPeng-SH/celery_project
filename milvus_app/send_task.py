@@ -17,13 +17,6 @@ def propagate_chain_get(terminal_node, timeout=None):
         node.get(propagate=True, timeout=timeout)
         node = node.parent
 
-def calculate():
-    c = (for tasks.get_data.s() | tasks.do_map.s(-2) | tasks.do_reduce.s())()
-    # propagate_chain_get(c)
-
-    logger.error(c.get())
-
-
 def execute_vector_query(table_id, vectors, topK):
     reducer = tasks.merge_query_results.s(topK=topK)
     reducer_result = reducer.freeze()
@@ -33,19 +26,22 @@ def execute_vector_query(table_id, vectors, topK):
             | tasks.schedule_query.s(tasks.query_file.s(vectors, topK), reducer)
         )()
 
-    propagate_chain_get(r)
+    propagate_chain_get(r, timeout=2)
 
     return reducer_result
 
 def main():
     results = []
-    for i in range(1):
-        async_result = execute_vector_query('test_group', [], 10)
-        results.append(async_result)
-    for result in results:
-        logger.error(result.failed())
-        # logger.error(result.graph)
-        # logger.error(result.get(propagate=True, follow_parents=True))
+    try:
+        for i in range(2):
+            async_result = execute_vector_query('test_group', [], 10)
+            results.append(async_result)
+        for result in results:
+            logger.error(result.failed())
+            # logger.error(result.graph)
+            logger.error(result.get(propagate=True, follow_parents=True))
+    except Exception as exc:
+        logger.error(exc)
 
 if __name__ == '__main__':
     main()
