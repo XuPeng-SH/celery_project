@@ -26,3 +26,7 @@ class QueryResponse:
     @classmethod
     def from_dict(cls, d):
         return cls(result=d['result'], code=d['code'], msg=d['msg'])
+
+    @property
+    def has_error(self):
+        return self.code != 0

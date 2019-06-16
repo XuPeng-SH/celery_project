@@ -1,4 +1,6 @@
-from celery import group, maybe_signature, chord
+from functools import reduce
+from celery.exceptions import Reject
+from celery import group, maybe_signature, chord, Task
 from celery.utils.log import get_task_logger
 from milvus_app import celery_app, db
 from milvus_app.models import Table, TableFile
@@ -7,28 +9,54 @@ from milvus_app.datatypes import QueryResponse
 
 logger = get_task_logger(__name__)
 
-@celery_app.task
-def subquery(query_vectors, topk, file_id):
-    logger.error('file_id={}'.format(file_id))
-    logger.error('query_vectors={}'.format(query_vectors))
-    logger.error('topk={}'.format(topk))
-    return file_id
+from celery.worker.request import Request
+
 
 @celery_app.task
-def query(table_id, query_vectors, topk, date_range):
+def get_queryable_files(table_id, date_range=None):
     table = db.Session.query(Table).filter_by(table_id=table_id).first()
+
     if not table:
         response = QueryResponse.BuildErrorResponse(TableNotFoundError(
             table_id))
+        response.result = []
         logger.error(response)
         return response
 
     files = table.files_to_search()
-    # for f in files:
-    #     r = subquery.apply_async(args=[f.id, query_vectors, topk])
-    #     results[f.id] = r
-    # logger.error(results)
-    return QueryResponse(result=[f.id for f in files])
+    result = [f.id for f in files]
+
+    logger.error('Result={}'.format(result))
+
+    return QueryResponse(result=result)
+
+@celery_app.task
+def query_file(file_id, vectors, topK):
+    logger.error('Querying file {}'.format(file_id))
+    return '{}.result'.format(file_id)
+
+@celery_app.task
+def merge_query_results(results, topK):
+    if not results:
+        return None
+    logger.error('Merging results: {}'.format(results))
+    ret = reduce(lambda x, y: '{}{}'.format(x, y),
+            map(lambda x: '--------{}-------\n'.format(x), results))
+    logger.error(ret)
+    return ret
+
+@celery_app.task(bind=True)
+def schedule_query(self, files_response, mapper, reducer):
+    mapper = maybe_signature(mapper, self.app)
+    reducer = maybe_signature(reducer, self.app)
+
+    file_ids = files_response.result
+
+    sub_tasks = [mapper.clone(args=(file_id,)) for file_id in file_ids]
+    scheduled = chord(sub_tasks)(reducer)
+    logger.error(scheduled)
+
+    return scheduled
 
 @celery_app.task
 def get_data(*args, **kwargs):
@@ -36,9 +64,9 @@ def get_data(*args, **kwargs):
 
 @celery_app.task
 def do_map(n, index):
-    # logger.error('doing map {} {}'.format(n, index))
+    logger.error('doing map {} {}'.format(n, index))
     result = n * index
-    # logger.error('result={}'.format(result))
+    logger.error('result={}'.format(result))
     return result
 
 @celery_app.task
@@ -53,10 +81,6 @@ def allocate(self, items, mapper, reducer):
     st = []
     for item in items:
         st.append(mapper.clone(args=(item,)))
-    logger.error('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-    logger.error(st)
-    logger.error(reducer)
     mapreduce = chord(st)(reducer)
     logger.error(mapreduce)
-    # return group(st|reducer)
     return chord(st)(reducer)
