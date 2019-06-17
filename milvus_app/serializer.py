@@ -1,7 +1,10 @@
 import json
 import datetime
+import logging
 from milvus_app.datatypes import (QueryResponse, QueryResultHelper,
         TopKQueryResultHelper, QueryResult, TopKQueryResult)
+
+logger = logging.getLogger(__name__)
 
 class JsonCustomEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -36,6 +39,8 @@ def JsonDumps(obj):
     return json.dumps(obj, cls=JsonCustomEncoder)
 
 def JsonLoads(obj):
+    if isinstance(obj, bytes):
+        obj = obj.decode()
     return json.loads(obj, object_hook=JsonDecoderHook)
 
 from kombu.serialization import register
