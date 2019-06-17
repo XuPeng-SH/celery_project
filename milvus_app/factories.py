@@ -12,7 +12,7 @@ from milvus_app.models import Table, TableFile
 
 class FakerProvider(BaseProvider):
     def random_float(self):
-        return (float(Faker().random_number()) * 0.01) % 100
+        return (float(Faker().random_number(digits=8, fix_len=True)) * 0.001) % 100
 
     def query_results(self):
         numbers = random.randint(0, 20)
@@ -46,6 +46,7 @@ class TableFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = db.Session
         sqlalchemy_session_persistence = 'commit'
 
+    id = factory.Faker('random_number', digits=16, fix_len=True)
     table_id = factory.Faker('uuid4')
     dimension = 512
     engine_type = factory.Faker('random_element', elements=(0,1,2,3))
@@ -59,6 +60,7 @@ class TableFileFactory(SQLAlchemyModelFactory):
         sqlalchemy_session = db.Session
         sqlalchemy_session_persistence = 'commit'
 
+    id = factory.Faker('random_number', digits=16, fix_len=True)
     table = factory.SubFactory(TableFactory)
     engine_type = factory.Faker('random_element', elements=(0,1,2,3))
     file_id = factory.Faker('uuid4')

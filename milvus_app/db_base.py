@@ -17,3 +17,9 @@ class DB:
     @property
     def Session(self):
         return self.db_session
+
+    def drop_all(self):
+        self.Model.metadata.drop_all(self.engine)
+
+    def create_all(self):
+        self.Model.metadata.create_all(self.engine)

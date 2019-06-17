@@ -17,7 +17,7 @@ class TableFile(DB.Model):
 
     __tablename__ = 'TableFile'
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     table_id = Column(String)
     engine_type = Column(Integer)
     file_id = Column(String)
@@ -37,7 +37,7 @@ class Table(DB.Model):
 
     __tablename__ = 'Table'
 
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     table_id = Column(String)
     dimension = Column(Integer)
     engine_type = Column(Integer)
