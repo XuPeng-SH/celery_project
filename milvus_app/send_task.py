@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 celery_app.config_from_object('milvus_app.config')
 from milvus_app.tasks import (merge_query_results, query_file,
-        get_queryable_files, schedule_query, prepare_data_for_final_reduce,
-        merge_files_query_results, final_reduce)
+        get_queryable_files, schedule_query, tranpose_n_topk_results,
+        reduce_one_request_files_results, reduce_n_request_files_results)
 
 
 def propagate_chain_get(terminal_node, timeout=None):
@@ -34,11 +34,11 @@ def execute_vector_query(table_id, vectors, topK):
     return reducer_result
 
 def vector_search_workflow(table_id, vectors, topK):
-    reducer = final_reduce.s()
+    reducer = reduce_n_request_files_results.s()
     reducer_result = reducer.freeze()
 
-    final = (prepare_data_for_final_reduce.s()
-            | schedule_query.s(merge_files_query_results.s(topK), reducer))
+    final = (tranpose_n_topk_results.s()
+            | schedule_query.s(reduce_one_request_files_results.s(topK), reducer))
 
     r = (
             get_queryable_files.s(table_id)

@@ -39,10 +39,10 @@ def test_get_queryable_files(setup_function):
 
     assert len(results.get()) == table.files_to_search().count()
 
-def test_merge_files_query_results(setup_function):
+def test_reduce_one_request_files_results(setup_function):
     topK = random.randint(0, 10)
     files_topk_results = mock_files_topk_results()
-    sig = tasks.merge_files_query_results.s(files_topk_results, topK)
+    sig = tasks.reduce_one_request_files_results.s(files_topk_results, topK)
     results = sig.apply().get()
 
     flat_results = []

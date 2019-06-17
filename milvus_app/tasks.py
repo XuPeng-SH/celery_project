@@ -37,13 +37,13 @@ def query_file(file_id, vectors, topK):
     return results
 
 @celery_app.task
-def prepare_data_for_final_reduce(files_n_topk_results):
+def tranpose_n_topk_results(files_n_topk_results):
     results_array = np.asarray(files_n_topk_results).transpose()
     results = results_array.tolist()
     return results
 
 @celery_app.task
-def merge_files_query_results(files_topk_results, topK):
+def reduce_one_request_files_results(files_topk_results, topK):
     topk_results = []
     for file_topk_results in files_topk_results:
         topk_results.extend(file_topk_results.query_results)
@@ -51,7 +51,7 @@ def merge_files_query_results(files_topk_results, topK):
     return TopKQueryResult(topk_results)
 
 @celery_app.task
-def final_reduce(topk_results):
+def reduce_n_request_files_results(topk_results):
     return topk_results
 
 @celery_app.task
