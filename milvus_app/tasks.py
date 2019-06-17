@@ -1,5 +1,6 @@
 from random import randint
 from functools import reduce
+import numpy as np
 from celery import maybe_signature, chord
 from celery.utils.log import get_task_logger
 from milvus.client.Abstract import TopKQueryResult, QueryResult
@@ -22,7 +23,6 @@ def get_queryable_files(table_id, date_range=None):
 
     files = table.files_to_search()
     result = [f.id for f in files]
-
     # logger.error('Result={}'.format(result))
     return result
 
@@ -30,22 +30,31 @@ def get_queryable_files(table_id, date_range=None):
 def query_file(file_id, vectors, topK):
     logger.error('Querying file {}'.format(file_id))
 
-    return TopKQueryResultFactory()
+    # <<<TODO: ---Mock Now---------
+    results = [TopKQueryResultFactory() for _ in range(len(vectors))]
+    for r in results:
+        logger.error(r)
+    # >>>TODO: ---Mock Now---------
+
+    return results
 
 @celery_app.task
-def merge_query_results(to_be_merged, topK):
-    if not to_be_merged or topK <= 0:
-        return None
+def merge_query_results(files_n_topk_results, topK):
+    if not files_n_topk_results or topK <= 0:
+        return []
 
-    # to_be_merged = [TopKQueryResultFactory() for _ in range(10)]
-    # topK = 200
+    results_array = np.asarray(files_n_topk_results).transpose()
+    topk_results = []
+    for files_topk_results in results_array:
+        each_topk = []
+        for file_topk_results in files_topk_results:
+            each_topk.extend(file_topk_results.query_results)
+            each_topk = sorted(each_topk, key=lambda x:x.score)[:topK]
+        topk_results.append(TopKQueryResult(each_topk))
 
-    results = []
-    for result in to_be_merged:
-        results.extend(result.query_results)
-        results = sorted(results, key=lambda x: x.score)[:topK]
+    logger.debug(topk_results)
 
-    return TopKQueryResult(query_results=results)
+    return topk_results
 
 @celery_app.task(bind=True)
 def schedule_query(self, file_ids, mapper, reducer):

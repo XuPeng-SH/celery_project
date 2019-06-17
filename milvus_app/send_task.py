@@ -35,14 +35,19 @@ def execute_vector_query(table_id, vectors, topK):
 def main():
     results = []
     try:
-        for table_id in ['test_group']*100:
+        for table_id in ['test_group']*1:
         # for table_id in ['test_group', 'xxxx']:
-            async_result = execute_vector_query(table_id, [], 20)
+            async_result = execute_vector_query(table_id, [1,2]*3, 5)
             results.append(async_result)
         for result in results:
             ret = result.get(propagate=True, follow_parents=True)
-            # for r in ret.query_results:
-            #     print(r)
+            if not ret:
+                logger.error('no topk')
+                continue
+            for r in ret:
+                logger.info('-----------------')
+                for idx, i in enumerate(r.query_results):
+                    logger.info('{} - \t{} {}'.format(idx, i.id, i.score))
     except Exception as exc:
         logger.exception('')
 
