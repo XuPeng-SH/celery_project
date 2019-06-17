@@ -7,9 +7,9 @@ def create_app(db=None, testing=False):
             broker=settings.CELERY_BROKER_URL,
             backend=settings.CELERY_BACKEND_URL)
     if settings.TESTING:
-        testing_config = 'milvus_app.settings.TestingConfig'
-        app.config_from_object(testing_config)
-        db and db.init_db(uri=testing_config.DB_URI)
+        from milvus_app.settings import TestingConfig
+        app.config_from_object(TestingConfig)
+        db and db.init_db(uri=TestingConfig.DB_URI)
     else:
         app.config_from_object(settings.CELERY_APP_CONFIG_FILE)
         db and db.init_db(uri=settings.DB_URI)
