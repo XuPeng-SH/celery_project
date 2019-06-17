@@ -55,7 +55,7 @@ def main():
     try:
         for table_id in ['test_group']*1:
             # async_result = vector_search_workflow(table_id, [1]*100, 100)
-            async_result = execute_vector_query(table_id, [1]*2000, 100)
+            async_result = execute_vector_query(table_id, [1]*20, 100)
             results.append(async_result)
 
         for result in results:
