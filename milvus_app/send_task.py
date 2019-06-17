@@ -9,7 +9,9 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 celery_app.config_from_object('milvus_app.config')
-from milvus_app import tasks
+from milvus_app.tasks import (merge_query_results, query_file,
+        get_queryable_files, schedule_query, prepare_data_for_final_reduce,
+        merge_files_query_results, final_reduce)
 
 
 def propagate_chain_get(terminal_node, timeout=None):
@@ -19,13 +21,29 @@ def propagate_chain_get(terminal_node, timeout=None):
         node = node.parent
 
 def execute_vector_query(table_id, vectors, topK):
-    reducer = tasks.merge_query_results.s(topK=topK)
+    reducer = merge_query_results.s(topK=topK)
     reducer_result = reducer.freeze()
 
     r = (
-            tasks.get_queryable_files.s(table_id)
-            | tasks.schedule_query.s(tasks.query_file.s(vectors, topK), reducer)
+            get_queryable_files.s(table_id)
+            | schedule_query.s(query_file.s(vectors, topK), reducer)
         )()
+
+    propagate_chain_get(r)
+
+    return reducer_result
+
+def vector_search_workflow(table_id, vectors, topK):
+    reducer = final_reduce.s()
+    reducer_result = reducer.freeze()
+
+    final = (prepare_data_for_final_reduce.s()
+            | schedule_query.s(merge_files_query_results.s(topK), reducer))
+
+    r = (
+            get_queryable_files.s(table_id)
+            | schedule_query.s(query_file.s(vectors, topK), final)
+    )()
 
     propagate_chain_get(r)
 
@@ -36,9 +54,10 @@ def main():
     results = []
     try:
         for table_id in ['test_group']*1:
-        # for table_id in ['test_group', 'xxxx']:
-            async_result = execute_vector_query(table_id, [1,2]*3, 5)
+            async_result = vector_search_workflow(table_id, [1]*1, 5)
+            # async_result = execute_vector_query(table_id, [1]*100, 5)
             results.append(async_result)
+
         for result in results:
             ret = result.get(propagate=True, follow_parents=True)
             if not ret:

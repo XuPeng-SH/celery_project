@@ -1,7 +1,7 @@
 from random import randint
 from functools import reduce
 import numpy as np
-from celery import maybe_signature, chord
+from celery import maybe_signature, chord, group
 from celery.utils.log import get_task_logger
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 
@@ -39,6 +39,25 @@ def query_file(file_id, vectors, topK):
     return results
 
 @celery_app.task
+def prepare_data_for_final_reduce(files_n_topk_results):
+    results_array = np.asarray(files_n_topk_results).transpose()
+    results = results_array.tolist()
+    return results
+
+@celery_app.task
+def merge_files_query_results(files_topk_results, topK):
+    topk_results = []
+    for file_topk_results in files_topk_results:
+        topk_results.extend(file_topk_results.query_results)
+        topk_results = sorted(topk_results, key=lambda x:x.score)[:topK]
+    logger.error(topk_results)
+    return TopKQueryResult(topk_results)
+
+@celery_app.task
+def final_reduce(topk_results):
+    return topk_results
+
+@celery_app.task
 def merge_query_results(files_n_topk_results, topK):
     if not files_n_topk_results or topK <= 0:
         return []
@@ -57,11 +76,11 @@ def merge_query_results(files_n_topk_results, topK):
     return topk_results
 
 @celery_app.task(bind=True)
-def schedule_query(self, file_ids, mapper, reducer):
+def schedule_query(self, source_data, mapper, reducer=None):
     mapper = maybe_signature(mapper, self.app)
-    reducer = maybe_signature(reducer, self.app)
+    reducer = maybe_signature(reducer, self.app) if reducer else None
 
-    sub_tasks = [mapper.clone(args=(file_id,)) for file_id in file_ids]
-    scheduled = chord(sub_tasks)(reducer)
+    sub_tasks = [mapper.clone(args=(data,)) for data in source_data]
+    scheduled = chord(sub_tasks)(reducer) if reducer else group(sub_tasks)()
 
     return scheduled

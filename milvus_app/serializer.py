@@ -1,4 +1,5 @@
 import json
+import datetime
 from milvus_app.datatypes import (QueryResponse, QueryResultHelper,
         TopKQueryResultHelper, QueryResult, TopKQueryResult)
 
@@ -12,6 +13,8 @@ class JsonCustomEncoder(json.JSONEncoder):
         if isinstance(obj, TopKQueryResult):
             helper = TopKQueryResultHelper(obj)
             return helper.to_dict()
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%s')
 
         return json.JSONEncoder.default(self, obj)
 
