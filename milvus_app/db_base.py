@@ -4,7 +4,10 @@ from sqlalchemy.orm import sessionmaker
 
 class DB:
     Model = declarative_base()
-    def __init__(self, uri):
+    def __init__(self, uri=None):
+        uri and self.init_db(uri)
+
+    def init_db(self, uri):
         self.engine = create_engine(uri)
         self.uri = uri
         session = sessionmaker()
@@ -14,6 +17,3 @@ class DB:
     @property
     def Session(self):
         return self.db_session
-
-# DB_URI = 'sqlite:////tmp/vecwise_test/meta.sqlite'
-# engine = create_engine(DB_URI)
