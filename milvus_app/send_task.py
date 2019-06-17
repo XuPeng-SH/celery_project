@@ -54,8 +54,8 @@ def main():
     results = []
     try:
         for table_id in ['test_group']*1:
-            async_result = vector_search_workflow(table_id, [1]*1, 5)
-            # async_result = execute_vector_query(table_id, [1]*100, 5)
+            async_result = vector_search_workflow(table_id, [1]*100, 100)
+            async_result = execute_vector_query(table_id, [1]*100, 100)
             results.append(async_result)
 
         for result in results:
@@ -63,10 +63,10 @@ def main():
             if not ret:
                 logger.error('no topk')
                 continue
-            for r in ret:
-                logger.info('-----------------')
-                for idx, i in enumerate(r.query_results):
-                    logger.info('{} - \t{} {}'.format(idx, i.id, i.score))
+            # for r in ret:
+            #     logger.info('-----------------')
+            #     for idx, i in enumerate(r.query_results):
+            #         logger.info('{} - \t{} {}'.format(idx, i.id, i.score))
     except Exception as exc:
         logger.exception('')
 

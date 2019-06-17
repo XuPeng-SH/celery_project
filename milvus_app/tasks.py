@@ -13,7 +13,6 @@ from milvus_app.factories import TopKQueryResultFactory
 
 logger = get_task_logger(__name__)
 
-
 @celery_app.task
 def get_queryable_files(table_id, date_range=None):
     table = db.Session.query(Table).filter_by(table_id=table_id).first()
@@ -23,7 +22,6 @@ def get_queryable_files(table_id, date_range=None):
 
     files = table.files_to_search()
     result = [f.id for f in files]
-    # logger.error('Result={}'.format(result))
     return result
 
 @celery_app.task
@@ -32,8 +30,8 @@ def query_file(file_id, vectors, topK):
 
     # <<<TODO: ---Mock Now---------
     results = [TopKQueryResultFactory() for _ in range(len(vectors))]
-    for r in results:
-        logger.error(r)
+    # for r in results:
+    #     logger.error(r)
     # >>>TODO: ---Mock Now---------
 
     return results
@@ -50,7 +48,6 @@ def merge_files_query_results(files_topk_results, topK):
     for file_topk_results in files_topk_results:
         topk_results.extend(file_topk_results.query_results)
         topk_results = sorted(topk_results, key=lambda x:x.score)[:topK]
-    logger.error(topk_results)
     return TopKQueryResult(topk_results)
 
 @celery_app.task
