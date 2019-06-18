@@ -131,3 +131,20 @@ class HashRing(object):
         key = key.encode()
         m.update(key)
         return m.digest()
+
+if __name__ == '__main__':
+    from collections import defaultdict
+    servers = ['192.168.0.246:11212',
+            '192.168.0.247:11212',
+            '192.168.0.248:11212',
+            '192.168.0.249:11212']
+
+    ring = HashRing(servers)
+    keys = ['{}'.format(i) for i in range(100)]
+    mapped = defaultdict(list)
+    for k in keys:
+        server = ring.get_node(k)
+        mapped[server].append(k)
+
+    for k,v in mapped.items():
+        print(k, v)
