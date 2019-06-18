@@ -28,41 +28,9 @@ LOG_LEVEL = env.str('LOG_LEVEL', 'DEBUG' if DEBUG else 'INFO')
 from milvus_app import config_logger
 config_logger.config(LOG_LEVEL)
 
-
-
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'default': {
-#             'handlers': ['console'],
-#             'level': LOG_LEVEL,
-#         },
-#     },
-# }
-
-# if DEBUG:
-#     LOGGING['formatters'] = {
-#         'colorful_console': {
-#             'format': '[%(asctime)s-%(levelname)s-%(name)s]: %(message)s (%(filename)s:%(lineno)s)',
-#             '()': ColorfulFormatter,
-#         },
-#     }
-#     LOGGING['handlers']['default_console'] = {
-#         'class': 'logging.StreamHandler',
-#         'formatter': 'colorful_console',
-#     }
-#     LOGGING['loggers']['default'] = {
-#         'handlers': ['default_console'],
-#         'level': LOG_LEVEL,
-#     }
-
-# logging.config.dictConfig(LOGGING)
+MILVUS_CLIENT = env.bool('MILVUS_CLIENT', False)
+MILVUS_SERVER_HOST = env.str('MILVUS_SERVER_HOST', None)
+MILVUS_SERVER_PORT = env.str('MILVUS_SERVER_PORT', None)
 
 class TestingConfig:
     DB_URI = env.str('DB_TEST_URI')
@@ -77,3 +45,7 @@ class TestingConfig:
     REDIS_HOST = env.str('REDIS_TEST_HOST', 'localhost')
     REDIS_PORT = env.int('REDIS_TEST_PORT', 6379)
     REDIS_PASSWORD = env.str('REDIS_TEST_PASSWORD', None)
+
+    MILVUS_CLIENT = env.bool('MILVUS_TEST_CLIENT', MILVUS_CLIENT)
+    MILVUS_SERVER_HOST = env.str('MILVUS_TEST_SERVER_HOST', MILVUS_SERVER_HOST)
+    MILVUS_SERVER_PORT = env.str('MILVUS_TEST_SERVER_PORT', MILVUS_SERVER_PORT)

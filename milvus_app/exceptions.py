@@ -7,3 +7,11 @@ class BaseException(Exception):
 class TableNotFoundException(BaseException):
     code = 1000
     message = 'TableNotFoundException'
+
+class SDKClientConnectionException(BaseException):
+    code = 1001
+    message = 'SDLClientConnectionException'
+
+class SDKClientSearchVectorException(BaseException):
+    code = 1002
+    message = 'SDKClientSearchVectorException'

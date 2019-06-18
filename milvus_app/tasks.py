@@ -3,11 +3,12 @@ from functools import reduce
 import numpy as np
 from celery import maybe_signature, chord, group
 from celery.utils.log import get_task_logger
+from milvus import Milvus
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 
-from milvus_app import celery_app, db, redis_client
+from milvus_app import celery_app, db, redis_client, settings
 from milvus_app.models import Table
-from milvus_app import settings
+from milvus_app.operations import SDKClient
 
 from milvus_app.exceptions import TableNotFoundException
 from milvus_app.factories import TopKQueryResultFactory
@@ -15,6 +16,7 @@ from milvus_app.factories import TopKQueryResultFactory
 from common.hash_ring import HashRing
 
 logger = get_task_logger(__name__)
+
 
 @celery_app.task
 def get_queryable_files(table_id, date_range=None):
@@ -25,6 +27,7 @@ def get_queryable_files(table_id, date_range=None):
 
     files = table.files_to_search()
     result = [f.id for f in files]
+
     return result
 
 @celery_app.task
@@ -33,12 +36,23 @@ def query_file(file_id, vectors, topK):
 
     servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
     # <<<TODO: ---Mock Now---------
-    results = [TopKQueryResultFactory() for _ in range(len(vectors))]
+    results = []
+    # results = [TopKQueryResultFactory() for _ in range(len(vectors))]
     logger.error(servers)
     ring = HashRing(servers)
     target = ring.get_node(str(file_id))
-    logger.error('{} target server is {}'.format(file_id, target))
+    # logger.error('{} target server is {}'.format(file_id, target))
     # >>>TODO: ---Mock Now---------
+    client = SDKClient()
+    with client:
+        t = client.search_vectors(table_id='test01',
+            query_records=vectors,
+            topK=topK)
+        logger.error(len(t))
+        logger.error(type(t[0]))
+        logger.error(len(t[0]))
+        logger.error(type(t[0][0]))
+        logger.error(t[0][0])
 
     return results
 
