@@ -53,6 +53,7 @@ def query_file(file_id, vectors, topK):
         logger.error(len(t[0]))
         logger.error(type(t[0][0]))
         logger.error(t[0][0])
+        results = [TopKQueryResult(r) for r in t]
 
     return results
 
