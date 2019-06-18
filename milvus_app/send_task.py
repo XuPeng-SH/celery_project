@@ -5,8 +5,7 @@ from __init__ import celery_app
 from celery import group, chain, signature
 from milvus_app.utils import time_it
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('milvus_app')
 
 celery_app.config_from_object('milvus_app.config')
 
