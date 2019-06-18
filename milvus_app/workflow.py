@@ -1,4 +1,4 @@
-from milvus_app.tasks import (merge_query_results, query_file,
+from milvus_app.tasks import (merge_query_results, query_files,
         get_queryable_files, schedule_query, tranpose_n_topk_results,
         reduce_one_request_files_results, reduce_n_request_files_results)
 
@@ -19,7 +19,7 @@ def query_vectors_1_n_1_workflow(table_id, vectors, topK):
 
     r = (
             get_queryable_files.s(table_id)
-            | schedule_query.s(query_file.s(vectors, topK), reducer)
+            | schedule_query.s(query_files.s(vectors, topK), reducer)
         )()
 
     propagate_chain_get(r)
@@ -40,7 +40,7 @@ def query_vectors_1_n_n_1_workflow(table_id, vectors, topK):
 
     r = (
             get_queryable_files.s(table_id)
-            | schedule_query.s(query_file.s(vectors, topK), final)
+            | schedule_query.s(query_files.s(vectors, topK), final)
     )()
 
     propagate_chain_get(r)

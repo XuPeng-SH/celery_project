@@ -5,7 +5,7 @@ CELERY_IMPORTS = ['milvus_app']
 CELERY_CREATE_MISSING_QUEUES = False
 
 CELERY_ROUTES={
-    'milvus_app.tasks.query_file' : {'queue': 'for_query'},
+    'milvus_app.tasks.query_files' : {'queue': 'for_query'},
     'milvus_app.tasks.schedule_query' : {'queue': 'for_query'},
     'milvus_app.tasks.get_queryable_files' : {'queue': 'for_query'},
     'milvus_app.tasks.merge_query_results' : {'queue': 'for_query'},

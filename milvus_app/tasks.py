@@ -1,6 +1,7 @@
 from random import randint
 from functools import reduce
 import numpy as np
+from collections import defaultdict
 from celery import maybe_signature, chord, group
 from celery.utils.log import get_task_logger
 from milvus import Milvus
@@ -28,19 +29,23 @@ def get_queryable_files(table_id, date_range=None):
     files = table.files_to_search()
     result = [f.id for f in files]
 
-    return result
+    routing = defaultdict(list)
+    servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
+    ring = HashRing(servers)
+    logger.error(servers)
+    for f in files:
+        target_server = ring.get_node(str(f.id))
+        routing[target_server].append(f.id)
+
+    return routing
 
 @celery_app.task
-def query_file(file_id, vectors, topK):
-    logger.info('Querying file {}'.format(file_id))
+def query_files(routing, vectors, topK):
+    logger.error('Querying routing {}'.format(routing))
 
-    servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
     # <<<TODO: ---Mock Now---------
     results = []
     # results = [TopKQueryResultFactory() for _ in range(len(vectors))]
-    logger.error(servers)
-    ring = HashRing(servers)
-    target = ring.get_node(str(file_id))
     # logger.error('{} target server is {}'.format(file_id, target))
     # >>>TODO: ---Mock Now---------
     client = SDKClient()
@@ -97,8 +102,10 @@ def merge_query_results(files_n_topk_results, topK):
 def schedule_query(self, source_data, mapper, reducer=None):
     mapper = maybe_signature(mapper, self.app)
     reducer = maybe_signature(reducer, self.app) if reducer else None
-
-    sub_tasks = [mapper.clone(args=(data,)) for data in source_data]
+    if isinstance(source_data, dict):
+        sub_tasks = [mapper.clone(args=(data,)) for data in source_data.items()]
+    else:
+        sub_tasks = [mapper.clone(args=(data,)) for data in source_data]
     scheduled = chord(sub_tasks)(reducer) if reducer else group(sub_tasks)()
 
     return scheduled
