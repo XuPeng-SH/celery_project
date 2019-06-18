@@ -36,13 +36,13 @@ class Monitor:
 
 def main(servers_monitor_key=None):
     import os
+    import sys
+    sys.path.append('../..')
+    from milvus_app.app_helper import create_app
 
     servers_monitor_key = servers_monitor_key if servers_monitor_key else os.environ['SERVERS_MONITOR_KEY']
     assert servers_monitor_key.startswith('monitor:'), 'Monitor key should start with: "monitor:"'
 
-    import sys
-    sys.path.append('../..')
-    from milvus_app.app_helper import create_app
     from milvus_app.redis_handler import RedisHandler
     redis_client = RedisHandler()
     celery_app = create_app(redis_client=redis_client)

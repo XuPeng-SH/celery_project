@@ -5,11 +5,14 @@ from celery import maybe_signature, chord, group
 from celery.utils.log import get_task_logger
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 
-from milvus_app import celery_app, db
+from milvus_app import celery_app, db, redis_client
 from milvus_app.models import Table
+from milvus_app import settings
 
 from milvus_app.exceptions import TableNotFoundException
 from milvus_app.factories import TopKQueryResultFactory
+
+from common.hash_ring import HashRing
 
 logger = get_task_logger(__name__)
 
@@ -26,12 +29,15 @@ def get_queryable_files(table_id, date_range=None):
 
 @celery_app.task
 def query_file(file_id, vectors, topK):
-    logger.error('Querying file {}'.format(file_id))
+    logger.info('Querying file {}'.format(file_id))
 
+    servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
     # <<<TODO: ---Mock Now---------
     results = [TopKQueryResultFactory() for _ in range(len(vectors))]
-    # for r in results:
-    #     logger.error(r)
+    logger.error(servers)
+    ring = HashRing(servers)
+    target = ring.get_node(str(file_id))
+    logger.error('{} target server is {}'.format(file_id, target))
     # >>>TODO: ---Mock Now---------
 
     return results

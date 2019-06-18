@@ -19,6 +19,8 @@ REDIS_HOST = env.str('REDIS_HOST', 'localhost')
 REDIS_PORT = env.int('REDIS_PORT', 6379)
 REDIS_PASSWORD = env.str('REDIS_PASSWORD', None)
 
+SERVERS_MONITOR_KEY = env.str('SERVERS_MONITOR_KEY', '')
+
 class TestingConfig:
     DB_URI = env.str('DB_TEST_URI')
     CELERY_APP_CONFIG_FILE = env.str('CELERY_APP_TEST_CONFIG_FILE', 'config_testing.py')

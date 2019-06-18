@@ -21,3 +21,7 @@ class RedisHandler:
                 port=self.port,
                 password=self.password if self.password else None,
                 db=self.db)
+
+    def smembers(self, key):
+        results = self.client.smembers(key)
+        return [result.decode() for result in results]
