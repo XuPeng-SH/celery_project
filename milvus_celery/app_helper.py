@@ -1,7 +1,7 @@
 from celery import Celery
-from milvus_app import serializer
-from milvus_app import settings
-from milvus_app.settings import TestingConfig, DefaultConfig
+from milvus_celery import serializer
+from milvus_celery import settings
+from milvus_celery.settings import TestingConfig, DefaultConfig
 
 def create_app(db=None, redis_client=None, testing=False, client=None, config=None):
     active_settings = TestingConfig if settings.TESTING else DefaultConfig

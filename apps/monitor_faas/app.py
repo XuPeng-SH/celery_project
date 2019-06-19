@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 import logging
 import fire
-from milvus_app import settings
+from milvus_celery import settings
 
 logging.basicConfig(level=logging.INFO)
 # logging.basicConfig(level=logging.DEBUG if settings.DEBUG else logging.INFO)
@@ -40,12 +40,12 @@ class Monitor:
 
 def main(servers_monitor_key=None):
     import os
-    from milvus_app.app_helper import create_app
+    from milvus_celery.app_helper import create_app
 
     servers_monitor_key = servers_monitor_key if servers_monitor_key else os.environ['SERVERS_MONITOR_KEY']
     assert servers_monitor_key.startswith('monitor:'), 'Monitor key should start with: "monitor:"'
 
-    from milvus_app.redis_handler import RedisHandler
+    from milvus_celery.redis_handler import RedisHandler
     redis_client = RedisHandler()
     celery_app = create_app(redis_client=redis_client)
 

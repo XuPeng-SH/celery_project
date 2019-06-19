@@ -2,8 +2,8 @@ import logging
 import pytest
 import random
 import numpy as np
-from milvus_app import tasks
-from milvus_app.factories import (TableFileFactory, TableFactory,
+from milvus_celery import tasks
+from milvus_celery.factories import (TableFileFactory, TableFactory,
         TableFile, Table, TopKQueryResultFactory)
 
 logger = logging.getLogger(__name__)

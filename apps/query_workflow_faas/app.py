@@ -2,11 +2,11 @@ import sys
 sys.path.append('..')
 sys.path.append('../..')
 import logging
-from milvus_app.app_helper import create_app
+from milvus_celery.app_helper import create_app
 from celery import group, chain, signature
-from milvus_app.utils import time_it
+from milvus_celery.utils import time_it
 
-logger = logging.getLogger('milvus_app')
+logger = logging.getLogger('milvus_celery')
 
 from apps.configurations import config
 celery_app = create_app(config=config)

@@ -1,8 +1,8 @@
 import random
 from pprint import pprint
-from milvus_app import settings
+from milvus_celery import settings
 from milvus import Milvus, Prepare, IndexType, Status
-from milvus_app.exceptions import (SDKClientConnectionException,
+from milvus_celery.exceptions import (SDKClientConnectionException,
         SDKClientSearchVectorException)
 
 class SDKClient(object):

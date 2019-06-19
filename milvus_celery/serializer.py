@@ -1,7 +1,7 @@
 import json
 import datetime
 import logging
-from milvus_app.datatypes import (QueryResponse, QueryResultHelper,
+from milvus_celery.datatypes import (QueryResponse, QueryResultHelper,
         TopKQueryResultHelper, QueryResult, TopKQueryResult)
 
 logger = logging.getLogger(__name__)

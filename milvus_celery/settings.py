@@ -25,7 +25,7 @@ DEBUG = env.bool('DEBUG', False)
 
 LOG_LEVEL = env.str('LOG_LEVEL', 'DEBUG' if DEBUG else 'INFO')
 
-from milvus_app import config_logger
+from milvus_celery import config_logger
 config_logger.config(LOG_LEVEL)
 
 MILVUS_CLIENT = env.bool('MILVUS_CLIENT', False)

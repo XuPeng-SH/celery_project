@@ -1,4 +1,4 @@
-from milvus_app.exceptions import BaseException
+from milvus_celery.exceptions import BaseException
 
 class TableNotFoundException(BaseException):
     code = 1000

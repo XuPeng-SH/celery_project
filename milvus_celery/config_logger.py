@@ -37,7 +37,7 @@ def config(log_level):
             },
         },
         'loggers': {
-            'milvus_app': {
+            'milvus_celery': {
                 'handlers': ['console'],
                 'level': log_level,
                 'propagate': False
@@ -53,12 +53,12 @@ def config(log_level):
                 '()': ColorfulFormatter,
             },
         }
-        LOGGING['handlers']['milvus_app_console'] = {
+        LOGGING['handlers']['milvus_celery_console'] = {
             'class': 'logging.StreamHandler',
             'formatter': 'colorful_console',
         }
-        LOGGING['loggers']['milvus_app'] = {
-            'handlers': ['milvus_app_console'],
+        LOGGING['loggers']['milvus_celery'] = {
+            'handlers': ['milvus_celery_console'],
             'level': log_level,
         }
 

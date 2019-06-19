@@ -3,7 +3,7 @@ from sqlalchemy import (Column, Integer, Boolean,
         String, BigInteger, func)
 from sqlalchemy.orm import relationship, backref
 
-from milvus_app.db_base import DB
+from milvus_celery.db_base import DB
 
 logger = logging.getLogger(__name__)
 
