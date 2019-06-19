@@ -1,10 +1,13 @@
+import sys
+
 import os
 import logging
 import logging.config
 
 from environs import Env
+env_path = os.environ.get('ENV_PATH', None)
 env = Env()
-env.read_env()
+env.read_env(env_path)
 
 TESTING = env.bool('TESTING', False)
 

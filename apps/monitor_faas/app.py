@@ -19,7 +19,7 @@ class Monitor:
         hostname = event['hostname']
         msg = '{} is online'.format(event['hostname'])
         logger.info(msg)
-        # self.sink_client.client.sadd(self.monitor_key, hostname)
+        self.sink_client.client.sadd(self.monitor_key, hostname)
 
     def on_server_offline(self, event):
         logger.info(event)
