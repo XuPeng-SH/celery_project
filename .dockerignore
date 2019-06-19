@@ -1,1 +1,6 @@
-.env
+*.env
+*/*/.env
+.gitignore
+.git
+*.log
+Dockerfile*
