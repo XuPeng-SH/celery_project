@@ -14,7 +14,7 @@ from milvus_app.operations import SDKClient
 from apps.query_tasks_worker.exceptions import TableNotFoundException
 from apps.query_tasks_worker.factories import TopKQueryResultFactory
 
-from common.hash_ring import HashRing
+from milvus_app.hash_ring import HashRing
 
 logger = get_task_logger(__name__)
 
