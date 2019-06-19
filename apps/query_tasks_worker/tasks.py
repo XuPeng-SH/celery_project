@@ -7,12 +7,12 @@ from celery.utils.log import get_task_logger
 from milvus import Milvus
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 
-from apps.query_tasks_worker.app import celery_app, db, redis_client, settings
-from apps.query_tasks_worker.models import Table
+from query_tasks_worker.app import celery_app, db, redis_client, settings
+from query_tasks_worker.models import Table
 from milvus_celery.operations import SDKClient
 
-from apps.query_tasks_worker.exceptions import TableNotFoundException
-from apps.query_tasks_worker.factories import TopKQueryResultFactory
+from query_tasks_worker.exceptions import TableNotFoundException
+from query_tasks_worker.factories import TopKQueryResultFactory
 
 from milvus_celery.hash_ring import HashRing
 

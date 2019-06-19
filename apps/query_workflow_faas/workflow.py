@@ -1,4 +1,4 @@
-from apps.query_tasks_worker.tasks import (merge_query_results, query_files,
+from query_tasks_worker.tasks import (merge_query_results, query_files,
         get_queryable_files, schedule_query, tranpose_n_topk_results,
         reduce_one_request_files_results, reduce_n_request_files_results)
 

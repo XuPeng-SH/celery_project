@@ -3,8 +3,7 @@ ENV_PATH = os.environ.get('ENV_PATH', None)
 os.environ['ENV_PATH'] = os.path.dirname(__file__) if ENV_PATH is None else ENV_PATH
 
 import sys
-sys.path.append('..')
-sys.path.append('../..')
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import logging
 from milvus_celery.app_helper import create_app
 from celery import group, chain, signature
@@ -12,10 +11,10 @@ from milvus_celery.utils import time_it
 
 logger = logging.getLogger('milvus_celery')
 
-from apps.configurations import config
+from configurations import config
 celery_app = create_app(config=config)
 
-from apps.query_workflow_faas import workflow
+from query_workflow_faas import workflow
 
 @time_it
 def main():

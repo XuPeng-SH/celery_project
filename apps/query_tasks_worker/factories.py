@@ -7,8 +7,8 @@ from faker import Faker
 from faker.providers import BaseProvider
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 
-from apps.query_tasks_worker.app import db
-from apps.query_tasks_worker.models import Table, TableFile
+from query_tasks_worker.app import db
+from query_tasks_worker.models import Table, TableFile
 
 class FakerProvider(BaseProvider):
     def random_float(self):
