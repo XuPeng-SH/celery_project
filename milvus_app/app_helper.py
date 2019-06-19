@@ -1,14 +1,14 @@
 from celery import Celery
 from milvus_app import serializer
 from milvus_app import settings
-from milvus_app.settings import TestingConfig
+from milvus_app.settings import TestingConfig, DefaultConfig
 
-def create_app(db=None, redis_client=None, testing=False, client=None):
+def create_app(db=None, redis_client=None, testing=False, client=None, config=None):
+    active_settings = TestingConfig if settings.TESTING else DefaultConfig
     app = Celery(__name__,
-            broker=settings.CELERY_BROKER_URL,
-            backend=settings.CELERY_BACKEND_URL)
-    app.config_from_object(TestingConfig if settings.TESTING else settings.CELERY_APP_CONFIG_FILE)
-    active_settings = TestingConfig if settings.TESTING else settings
+            broker=active_settings.CELERY_BROKER_URL,
+            backend=active_settings.CELERY_BACKEND_URL)
+    app.config_from_object(config)
 
     db and db.init_db(uri=active_settings.DB_URI)
     if redis_client:

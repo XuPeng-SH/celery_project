@@ -4,10 +4,6 @@ class BaseException(Exception):
         self.message = self.__class__.__name__
         self.message = '{}: {}'.format(self.message, message) if message else self.message
 
-class TableNotFoundException(BaseException):
-    code = 1000
-    message = 'TableNotFoundException'
-
 class SDKClientConnectionException(BaseException):
     code = 1001
     message = 'SDLClientConnectionException'
