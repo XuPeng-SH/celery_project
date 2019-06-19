@@ -1,0 +1,5 @@
+FROM zilliz.azurecr.cn/milvus/celery:v0.0.1
+WORKDIR /source
+ADD ./requirements_apps.txt ./
+RUN pip install -r requirements_apps.txt
+COPY ./apps .
