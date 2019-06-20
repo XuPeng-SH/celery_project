@@ -1,7 +1,10 @@
+import logging
 from celery import Celery
 from milvus_celery import serializer
 from milvus_celery import settings
 from milvus_celery.settings import TestingConfig, DefaultConfig
+
+logger = logging.getLogger(__name__)
 
 def create_app(db=None, redis_client=None, testing=False, client=None, config=None):
     active_settings = TestingConfig if settings.TESTING else DefaultConfig
@@ -9,6 +12,8 @@ def create_app(db=None, redis_client=None, testing=False, client=None, config=No
             broker=active_settings.CELERY_BROKER_URL,
             backend=active_settings.CELERY_BACKEND_URL)
     app.config_from_object(config)
+    logger.info(app.conf.get('CELERY_QUEUES'))
+    logger.info(app.conf.get('CELERY_ROUTES'))
 
     db and db.init_db(uri=active_settings.DB_URI)
     if redis_client:
