@@ -6,13 +6,14 @@ from celery import maybe_signature, chord, group
 from celery.utils.log import get_task_logger
 from milvus import Milvus
 from milvus.client.Abstract import TopKQueryResult, QueryResult
+from common.factories import TopKQueryResultFactory
 
 from query_tasks_worker.app import celery_app, db, redis_client, settings
 from query_tasks_worker.models import Table
 from milvus_celery.operations import SDKClient
 
 from query_tasks_worker.exceptions import TableNotFoundException
-from query_tasks_worker.factories import TopKQueryResultFactory, TableFactory, TableFileFactory
+from query_tasks_worker.factories import TableFactory, TableFileFactory
 
 from milvus_celery.hash_ring import HashRing
 
@@ -46,8 +47,8 @@ def get_queryable_files(table_id, date_range=None):
     ring = HashRing(servers)
     logger.error(servers)
     for f in files:
-        target_server = ring.get_node(str(f.id))
-        routing[target_server].append(f.id)
+        queue = ring.get_node(str(f.id))
+        routing[queue].append(f.id)
 
     return routing
 
@@ -109,7 +110,8 @@ def schedule_query(self, source_data, mapper, reducer=None):
     mapper = maybe_signature(mapper, self.app)
     reducer = maybe_signature(reducer, self.app) if reducer else None
     if isinstance(source_data, dict):
-        sub_tasks = [mapper.clone(args=(data,)) for data in source_data.items()]
+        logger.error(source_data)
+        sub_tasks = [mapper.clone(args=((q,ids),)).set(queue=q) for q, ids in source_data.items()]
     else:
         sub_tasks = [mapper.clone(args=(data,)) for data in source_data]
     scheduled = chord(sub_tasks)(reducer) if reducer else group(sub_tasks)()

@@ -21,8 +21,8 @@ def main():
     results = []
     try:
         for table_id in ['test_group']*1:
-            async_result = workflow.query_vectors_1_n_n_1_workflow(table_id, [1]*2, 10)
-            # async_result = workflow.query_vectors_1_n_1_workflow(table_id, [1]*2, 10)
+            # async_result = workflow.query_vectors_1_n_n_1_workflow(table_id, [1]*2, 10)
+            async_result = workflow.query_vectors_1_n_1_workflow(table_id, [1]*2, 10)
             results.append(async_result)
 
         for result in results:

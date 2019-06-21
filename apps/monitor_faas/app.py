@@ -23,14 +23,18 @@ class Monitor:
         hostname = event['hostname']
         msg = '{} is online'.format(event['hostname'])
         logger.info(msg)
-        self.sink_client.client.sadd(self.monitor_key, hostname)
+        queue = hostname.split('@')[1]
+        if queue.startswith('sidecar'):
+            self.sink_client.client.sadd(self.monitor_key, queue)
 
     def on_server_offline(self, event):
         logger.info(event)
         hostname = event['hostname']
         msg = '{} is offline'.format(event['hostname'])
         logger.info(msg)
-        self.sink_client.client.srem(self.monitor_key, hostname)
+        queue = hostname.split('@')[1]
+        if queue.startswith('sidecar'):
+            self.sink_client.client.srem(self.monitor_key, queue)
 
     def run(self):
         with self.application.connection() as connection:

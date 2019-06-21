@@ -17,8 +17,8 @@ client = None
 if settings.MILVUS_CLIENT:
     client = Milvus()
 
-from configurations import config
+from . import config
+# from configurations import config
 celery_app = create_app(db=db, redis_client=redis_client, client=client, config=config)
 
 from query_tasks_worker import tasks
-# from milvus_celery import signal_handlers

@@ -3,7 +3,7 @@ import os
 CELERY_ACCEPT_CONTENT = ['customjson']
 CELERY_TASK_SERIALIZER = 'customjson'
 CELERY_RESULT_SERIALIZER = 'customjson'
-CELERY_CREATE_MISSING_QUEUES = False
+CELERY_CREATE_MISSING_QUEUES = True
 
 
 def make_queues():
@@ -13,12 +13,10 @@ def make_queues():
     for q in q_list:
         if not q:
             continue
-        routes['tasks.handle_request'] = q
+        routes['tasks.query_files'] = q
         queues[q] = {
             'exchange': q
         }
-    assert len(routes) > 0
-
     return routes, queues
 
 
@@ -29,5 +27,3 @@ CELERY_QUEUES.update({
         'exchange': 'default'
     },
 })
-print(CELERY_ROUTES)
-print(CELERY_QUEUES)
