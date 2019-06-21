@@ -22,7 +22,7 @@ class TableFile(DB.Model):
     engine_type = Column(Integer)
     file_id = Column(String(50))
     file_type = Column(Integer)
-    size = Column(Integer)
+    size = Column(Integer, default=0)
     updated_time = Column(BigInteger)
     created_on = Column(BigInteger)
     date = Column(Integer)

@@ -12,15 +12,21 @@ from query_tasks_worker.models import Table
 from milvus_celery.operations import SDKClient
 
 from query_tasks_worker.exceptions import TableNotFoundException
-from query_tasks_worker.factories import TopKQueryResultFactory
+from query_tasks_worker.factories import TopKQueryResultFactory, TableFactory, TableFileFactory
 
 from milvus_celery.hash_ring import HashRing
 
 logger = get_task_logger(__name__)
 
+def fake_all():
+    db.drop_all()
+    db.create_all()
+    table = TableFactory(table_id='test_group')
+    TableFileFactory.create_batch(3, table=table)
 
 @celery_app.task
 def get_queryable_files(table_id, date_range=None):
+    fake_all()
     try:
         table = db.Session.query(Table).filter_by(table_id=table_id).first()
     except Exception as exc:
@@ -47,8 +53,8 @@ def query_files(routing, vectors, topK):
     logger.error('Querying routing {}'.format(routing))
 
     # <<<TODO: ---Mock Now---------
-    results = []
-    # results = [TopKQueryResultFactory() for _ in range(len(vectors))]
+    results = [TopKQueryResultFactory() for _ in range(len(vectors))]
+    return results
     # logger.error('{} target server is {}'.format(file_id, target))
     # >>>TODO: ---Mock Now---------
     client = SDKClient()
