@@ -19,6 +19,8 @@ from milvus_celery.hash_ring import HashRing
 logger = get_task_logger(__name__)
 
 def fake_all():
+    import os
+    os.mkdir('/tmp/vecwise_test')
     db.drop_all()
     db.create_all()
     table = TableFactory(table_id='test_group')
@@ -52,11 +54,10 @@ def get_queryable_files(table_id, date_range=None):
 def query_files(routing, vectors, topK):
     logger.error('Querying routing {}'.format(routing))
 
-    # <<<TODO: ---Mock Now---------
-    results = [TopKQueryResultFactory() for _ in range(len(vectors))]
-    return results
-    # logger.error('{} target server is {}'.format(file_id, target))
-    # >>>TODO: ---Mock Now---------
+    if not settings.MILVUS_CLIENT:
+        results = [TopKQueryResultFactory() for _ in range(len(vectors))]
+        return results
+
     client = SDKClient()
     with client:
         t = client.search_vectors(table_id='test01',
