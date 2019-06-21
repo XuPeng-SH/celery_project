@@ -9,7 +9,12 @@ from milvus_celery.redis_handler import RedisHandler
 from milvus_celery.app_helper import create_app
 redis_client = RedisHandler()
 
-from configurations import sidecar
-celery_app = create_app(redis_client=redis_client, config=sidecar)
+from . import config
+celery_app = create_app(redis_client=redis_client, config=config)
 
+import logging
+logger = logging.getLogger(__name__)
+logger.debug(config)
+
+from . import tasks
 from . import signal_handlers
