@@ -20,8 +20,9 @@ logger = get_task_logger(__name__)
 
 def fake_all():
     import os
+    if os.path.exists('/tmp/vecwise_test'):
+        return
     os.mkdir('/tmp/vecwise_test')
-    db.drop_all()
     db.create_all()
     table = TableFactory(table_id='test_group')
     TableFileFactory.create_batch(3, table=table)
