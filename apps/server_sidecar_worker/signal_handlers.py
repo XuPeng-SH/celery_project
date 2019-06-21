@@ -14,12 +14,10 @@ def ready_handler(sender=None, **kwargs):
     logger.info('MonitorKey: {}'.format(servers_monitor_key))
     logger.info('Worker {} is ready'.format(sender.hostname))
     queue = sender.hostname.split('@')[1]
-    if queue.startswith('sidecar'):
-        redis_client.client.sadd(servers_monitor_key, queue)
+    redis_client.client.sadd(servers_monitor_key, queue)
 
 @worker_shutdown.connect
 def shutdown_handler(sender=None, **kwargs):
     logger.error('Worker {} is going to shutdown'.format(sender.hostname))
     queue = sender.hostname.split('@')[1]
-    if queue.startswith('sidecar'):
-        redis_client.client.srem(servers_monitor_key, queue)
+    redis_client.client.srem(servers_monitor_key, queue)

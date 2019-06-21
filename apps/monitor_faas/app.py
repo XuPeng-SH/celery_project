@@ -24,7 +24,7 @@ class Monitor:
         msg = '{} is online'.format(event['hostname'])
         logger.info(msg)
         queue = hostname.split('@')[1]
-        if queue.startswith('sidecar'):
+        if queue.startswith('milvus-ro-servers'):
             self.sink_client.client.sadd(self.monitor_key, queue)
 
     def on_server_offline(self, event):
@@ -33,7 +33,7 @@ class Monitor:
         msg = '{} is offline'.format(event['hostname'])
         logger.info(msg)
         queue = hostname.split('@')[1]
-        if queue.startswith('sidecar'):
+        if queue.startswith('milvus-ro-servers'):
             self.sink_client.client.srem(self.monitor_key, queue)
 
     def run(self):
