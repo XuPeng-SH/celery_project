@@ -89,18 +89,22 @@ def merge_query_results(files_n_topk_results, topK):
     if not files_n_topk_results or topK <= 0:
         return []
 
-    results_array = np.asarray(files_n_topk_results).transpose()
-    topk_results = []
-    for files_topk_results in results_array:
-        each_topk = []
-        for file_topk_results in files_topk_results:
-            each_topk.extend(file_topk_results)
-            each_topk = sorted(each_topk, key=lambda x:x.score)[:topK]
-        topk_results.append(TopKQueryResult(each_topk))
+    logger.debug(files_n_topk_results)
 
-    logger.debug(topk_results)
+    request_results = defaultdict(list)
 
-    return topk_results
+    for files_collection in files_n_topk_results:
+        for request_pos, each_request_results in enumerate(files_collection):
+            request_results[request_pos].extend(each_request_results)
+            request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.score,
+                    reverse=True)[:topK]
+
+    results = sorted(request_results.items())
+    results = [value[1] for value in results]
+    logger.debug(results)
+
+    return results
+
 
 @celery_app.task(bind=True)
 def schedule_query(self, source_data, mapper, reducer=None):
