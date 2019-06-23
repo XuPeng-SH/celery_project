@@ -29,8 +29,6 @@ class SDKClient(object):
         self.client = None
 
     def search_vectors(self, table_id, query_records, topK):
-        dim = 256
-        query_records = Prepare.records([[random.random()for _ in range(dim)] for _ in range(2)])
         param = {
             'table_name': table_id,
             'query_records': query_records,
