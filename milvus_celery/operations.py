@@ -47,3 +47,16 @@ class SDKClient(object):
         pprint(results)
 
         return results
+
+    def search_vectors_in_files(self, table_id, file_ids, query_records, topK, query_ranges=None):
+        try:
+            status, results = self.client.search_vectors_in_files(
+                    table_id, file_ids, query_records, topK, query_ranges)
+        except Exception as exc:
+            raise SDKClientSearchVectorException(str(exc))
+
+        if status != Status.SUCCESS:
+            raise SDKClientSearchVectorException(str(status))
+        pprint(results)
+
+        return results
