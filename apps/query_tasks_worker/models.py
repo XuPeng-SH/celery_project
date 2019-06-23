@@ -15,7 +15,7 @@ class TableFile(DB.Model):
     FILE_TYPE_INDEX = 3
     FILE_TYPE_TO_DELETE = 4
 
-    __tablename__ = 'TableFile'
+    __tablename__ = 'TableFiles'
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     table_id = Column(String(50))
@@ -35,7 +35,7 @@ class TableFile(DB.Model):
 
 class Table(DB.Model):
 
-    __tablename__ = 'Table'
+    __tablename__ = 'Tables'
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     table_id = Column(String(50))

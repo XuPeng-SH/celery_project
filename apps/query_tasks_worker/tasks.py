@@ -19,18 +19,9 @@ from milvus_celery.hash_ring import HashRing
 
 logger = get_task_logger(__name__)
 
-def fake_all():
-    import os
-    if os.path.exists('/tmp/vecwise_test'):
-        return
-    os.mkdir('/tmp/vecwise_test')
-    db.create_all()
-    table = TableFactory(table_id='test_group')
-    TableFileFactory.create_batch(3, table=table)
 
 @celery_app.task
 def get_queryable_files(table_id, date_range=None):
-    fake_all()
     try:
         table = db.Session.query(Table).filter_by(table_id=table_id).first()
     except Exception as exc:
@@ -42,13 +33,19 @@ def get_queryable_files(table_id, date_range=None):
     files = table.files_to_search()
     result = [f.id for f in files]
 
-    routing = defaultdict(list)
+    routing = {}
     servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
     ring = HashRing(servers)
     logger.error(servers)
     for f in files:
         queue = ring.get_node(str(f.id))
-        routing[queue].append(f.id)
+        sub = routing.get(queue, None)
+        if not sub:
+            routing[queue] = {
+                'table_id': table_id,
+                'file_ids': []
+            }
+        routing[queue]['file_ids'].append(f.id)
 
     return routing
 
@@ -79,7 +76,7 @@ def tranpose_n_topk_results(files_n_topk_results):
 def reduce_one_request_files_results(files_topk_results, topK):
     topk_results = []
     for file_topk_results in files_topk_results:
-        topk_results.extend(file_topk_results.query_results)
+        topk_results.extend(file_topk_results)
         topk_results = sorted(topk_results, key=lambda x:x.score)[:topK]
     return TopKQueryResult(topk_results)
 
@@ -97,7 +94,7 @@ def merge_query_results(files_n_topk_results, topK):
     for files_topk_results in results_array:
         each_topk = []
         for file_topk_results in files_topk_results:
-            each_topk.extend(file_topk_results.query_results)
+            each_topk.extend(file_topk_results)
             each_topk = sorted(each_topk, key=lambda x:x.score)[:topK]
         topk_results.append(TopKQueryResult(each_topk))
 

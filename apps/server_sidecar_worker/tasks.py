@@ -14,15 +14,11 @@ logger = get_task_logger(__name__)
 def query_files(routing, vectors, topK):
     logger.error('Querying routing {}'.format(routing))
 
-    if not settings.MILVUS_CLIENT:
-        results = [TopKQueryResultFactory() for _ in range(len(vectors))]
-        return results
-
-    client = SDKClient()
+    client = SDKClient(host=settings.MILVUS_SERVER_HOST, port=settings.MILVUS_SERVER_PORT)
     with client:
-        t = client.search_vectors(table_id='test01',
-            query_records=vectors,
-            topK=topK)
-        results = [TopKQueryResult(r) for r in t]
+        # t = client.search_vectors_in_files(table_id=routing[1]['table_id'], file_ids=routing[1]['file_ids'],
+        #         query_records=vectors, topK=topK)
+        results = client.search_vectors(routing[1]['table_id'], vectors, topK)
+        logger.debug(results)
 
     return results

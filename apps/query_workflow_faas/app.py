@@ -32,7 +32,7 @@ def main():
                 continue
             for r in ret:
                 logger.info('-----------------')
-                for idx, i in enumerate(r.query_results):
+                for idx, i in enumerate(r):
                     logger.info('{} - \t{} {}'.format(idx, i.id, i.score))
     except Exception as exc:
         logger.exception('')
