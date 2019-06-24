@@ -18,6 +18,6 @@ def ready_handler(sender=None, **kwargs):
 
 @worker_shutdown.connect
 def shutdown_handler(sender=None, **kwargs):
-    logger.error('Worker {} is going to shutdown'.format(sender.hostname))
+    logger.info('Worker {} is going to shutdown'.format(sender.hostname))
     queue = sender.hostname.split('@')[1]
     redis_client.client.srem(servers_monitor_key, queue)

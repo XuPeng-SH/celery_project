@@ -17,10 +17,6 @@ def query_files(routing, vectors, topK):
     with client:
         results = client.search_vectors_in_files(table_id=routing[1]['table_id'], file_ids=routing[1]['file_ids'],
                 query_records=vectors, topK=topK)
-        # results = client.search_vectors(routing[1]['table_id'], vectors, topK)
-        for pos, vector in enumerate(vectors):
-            logger.debug('vector-{}: {}'.format(pos, vector))
-        logger.debug(len(vectors))
         for pos, result in enumerate(results):
             logger.debug('result-{}: {}'.format(pos, result))
         logger.debug(len(results))

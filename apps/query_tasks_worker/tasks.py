@@ -36,7 +36,7 @@ def get_queryable_files(table_id, date_range=None):
     routing = {}
     servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
     ring = HashRing(servers)
-    logger.error(servers)
+    logger.debug('Avaialble servers: {}'.format(servers))
     for f in files:
         queue = ring.get_node(str(f.id))
         sub = routing.get(queue, None)
@@ -51,7 +51,7 @@ def get_queryable_files(table_id, date_range=None):
 
 @celery_app.task
 def query_files(routing, vectors, topK):
-    logger.error('Querying routing {}'.format(routing))
+    logger.debug('Querying routing {}'.format(routing))
 
     if not settings.MILVUS_CLIENT:
         results = [TopKQueryResultFactory() for _ in range(len(vectors))]
@@ -89,7 +89,7 @@ def merge_query_results(files_n_topk_results, topK):
     if not files_n_topk_results or topK <= 0:
         return []
 
-    logger.debug(files_n_topk_results)
+    logger.debug('files_n_topk_results: {}'.format(files_n_topk_results))
 
     request_results = defaultdict(list)
 
@@ -101,7 +101,7 @@ def merge_query_results(files_n_topk_results, topK):
 
     results = sorted(request_results.items())
     results = [value[1] for value in results]
-    logger.debug(results)
+    logger.debug('merge_results: {}'.format(results))
 
     return results
 
@@ -111,7 +111,6 @@ def schedule_query(self, source_data, mapper, reducer=None):
     mapper = maybe_signature(mapper, self.app)
     reducer = maybe_signature(reducer, self.app) if reducer else None
     if isinstance(source_data, dict):
-        logger.error(source_data)
         sub_tasks = [mapper.clone(args=((q,ids),)).set(queue=q) for q, ids in source_data.items()]
     else:
         sub_tasks = [mapper.clone(args=(data,)) for data in source_data]
