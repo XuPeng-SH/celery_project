@@ -1,5 +1,6 @@
-import sys
-sys.path.append('..')
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from thrift.protocol import TBinaryProtocol, TCompactProtocol, TJSONProtocol
 from thrift.transport import TTransport, TSocket, TZlibTransport
 from thrift.server import TServer
@@ -7,7 +8,7 @@ from thrift.server import TServer
 from milvus.thrift import MilvusService
 
 from MilvusHandler import MilvusHandler
-from settings import DefaultConfig
+import settings
 
 import sys
 if sys.version_info[0] > 2:
@@ -27,7 +28,7 @@ def run():
     handler = MilvusHandler()
     processor = MilvusService.Processor(handler)
 
-    transport = DefaultConfig.THRIFTSERVER_TRANSPORT
+    transport = settings.THRIFTSERVER_TRANSPORT
 
     config_uri = urlparse(transport)
 
@@ -42,30 +43,30 @@ def run():
     else:
         raise RuntimeError(
             'Invalid configuration for THRIFTSERVER_TRANSPORT: {transport}'.format(
-                transport=DefaultConfig.THRIFTSERVER_TRANSPORT
+                transport=settings.THRIFTSERVER_TRANSPORT
             )
         )
 
-    if DefaultConfig.THRIFTSERVER_BUFFERED:
+    if settings.THRIFTSERVER_BUFFERED:
         tfactory = TTransport.TBufferedTransportFactory()
-    if DefaultConfig.THRIFTSERVER_ZLIB:
+    if settings.THRIFTSERVER_ZLIB:
         tfactory = TZlibTransport.TZlibTransportFactory()
-    if DefaultConfig.THRIFTSERVER_FRAMED:
+    if settings.THRIFTSERVER_FRAMED:
         tfactory = TTransport.TFramedTransportFactory()
 
-    if DefaultConfig.THRIFTSERVER_PROTOCOL == Protocol.BINARY:
+    if settings.THRIFTSERVER_PROTOCOL == Protocol.BINARY:
         pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
-    elif DefaultConfig.THRIFTSERVER_PROTOCOL == Protocol.COMPACT:
+    elif settings.THRIFTSERVER_PROTOCOL == Protocol.COMPACT:
         pfactory = TCompactProtocol.TCompactProtocolFactory()
 
-    elif DefaultConfig.THRIFTSERVER_PROTOCOL == Protocol.JSON:
+    elif settings.THRIFTSERVER_PROTOCOL == Protocol.JSON:
         pfactory = TJSONProtocol.TJSONProtocolFactory()
 
     else:
         raise RuntimeError(
             "invalid configuration for THRIFTSERVER_PROTOCOL: {protocol}"
-                .format(protocol=DefaultConfig.THRIFTSERVER_PROTOCOL)
+                .format(protocol=settingss.THRIFTSERVER_PROTOCOL)
         )
 
     # TODO tfactory default

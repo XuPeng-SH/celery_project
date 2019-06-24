@@ -1,46 +1,18 @@
+import logging
+from milvus import Milvus, Prepare, IndexType, Status
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception)
-from milvus import Milvus, Prepare, IndexType, Status
-from settings import DefaultConfig
-import logging
+import settings
+
+from milvus_celery.app_helper import create_app
+
+from configurations import config
+celery_app = create_app(config=config)
+
 LOGGER = logging.getLogger(__name__)
-from contextlib import contextmanager
-from functools import wraps
 
-
-# from query_tasks_worker.tasks import (merge_query_results,
-#         get_queryable_files, schedule_query, tranpose_n_topk_results,
-#         reduce_one_request_files_results, reduce_n_request_files_results)
-#
-# from server_sidecar_worker.tasks import query_files
-#
-# def propagate_chain_get(terminal_node, timeout=None):
-#     node = terminal_node.parent
-#     while node:
-#         node.get(propagate=True, timeout=timeout)
-#         node = node.parent
-#
-# ###########################################################################
-# ##                   1. QueryFile
-# ## QueryFileList ->  2. QueryFile  -> Merge
-# ##                      ...
-# ###########################################################################
-# def query_vectors_1_n_1_workflow(table_id, vectors, topK):
-#     queue = 'for_query'
-#     reducer = merge_query_results.s(topK=topK).set(queue=queue)
-#     reducer_result = reducer.freeze()
-#
-#     r = (
-#             get_queryable_files.s(table_id).set(queue=queue)
-#             | schedule_query.s(query_files.s(vectors, topK).set(queue=queue), reducer).set(queue=queue)
-#         )()
-#
-#     propagate_chain_get(r)
-#
-#     return reducer_result
-
-uri = DefaultConfig.THRIFTCLIENT_TRANSPORT
+uri = settings.THRIFTCLIENT_TRANSPORT
 _milvus = Milvus()
 _milvus.connect(uri=uri)
 
@@ -81,18 +53,44 @@ class MilvusHandler:
 
     def SearchVector(self, table_name, query_record_array, topk, query_range_array=None):
 
-        LOGGER.info('Searching Vectors...')
-        res = search_vector.delay(table_name=table_name, query_record_array=query_record_array,
-                                  topk=topk, query_range_array=query_range_array)
-        status, result = res.get(timeout=1)
+        async_result = workflow.query_vectors_1_n_1_workflow(table_name,
+                                                             query_record_array,
+                                                             topk,
+                                                             query_range_array)
 
-        if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+        result = async_result.get(propagate=True, follow_parents=True)
+
+        for pos, r in enumerate(result):
+            LOGGER.info('--------------------Q: {}-------------------------'.format(pos))
+            for idx, i in enumerate(r):
+                LOGGER.info('{} - {} {}'.format(idx, i.id, i.score))
         res = TopKQueryResult()
         for top_k_query_results in result:
             res.query_result_arrays.append([QueryResult(id=qr.id, score=qr.score)
                                             for qr in top_k_query_results])
         return res
+
+        # results = []
+        # topK = 5
+        # try:
+        #     for table_id in ['test_group']*1:
+        #         dim = 256
+        #         query_records = query_record_array
+        #         async_result = workflow.query_vectors_1_n_1_workflow(table_id, query_records, topK)
+        #         results.append(async_result)
+        #
+        #     for result in results:
+        #         ret = result.get(propagate=True, follow_parents=True)
+        #         if not ret:
+        #             logger.error('no topk')
+        #             continue
+        #         for pos, r in enumerate(ret):
+        #             logger.info('-------------Q:={}--------'.format(pos))
+        #             for idx, i in enumerate(r):
+        #                 logger.info('{} - \t{} {}'.format(idx, i.id, i.score))
+        # except Exception as exc:
+        #     logger.exception('')
+
 
     def SearchVectorInFiles(self, table_name, file_id_array, query_record_array, topk, query_range_array=None):
         LOGGER.info('Searching Vectors in files...')
