@@ -45,7 +45,7 @@ def get_queryable_files(table_id, date_range=None):
                 'table_id': table_id,
                 'file_ids': []
             }
-        routing[queue]['file_ids'].append(f.id)
+        routing[queue]['file_ids'].append(str(f.id))
 
     return routing
 
