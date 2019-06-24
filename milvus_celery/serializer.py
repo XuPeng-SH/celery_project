@@ -2,7 +2,8 @@ import json
 import datetime
 import logging
 from milvus_celery.datatypes import (QueryResponse, QueryResultHelper,
-        TopKQueryResultHelper, QueryResult, TopKQueryResult)
+        TopKQueryResultHelper, QueryResult, TopKQueryResult, RowRecord,
+        RowRecordHelper)
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,8 @@ class JsonCustomEncoder(json.JSONEncoder):
             return helper.to_dict()
         if isinstance(obj, datetime.datetime):
             return obj.strftime('%s')
+        if isinstance(obj, RowRecord):
+            return RowRecordHelper(obj).to_dict()
 
         return json.JSONEncoder.default(self, obj)
 
@@ -34,6 +37,8 @@ def JsonDecoderHook(obj):
     if obj['__type__'] == TopKQueryResultHelper.__type__:
         return TopKQueryResultHelper.from_dict(obj)
 
+    if obj['__type__'] == RowRecordHelper.__type__:
+        return RowRecordHelper.from_dict(obj)
 
 def JsonDumps(obj):
     return json.dumps(obj, cls=JsonCustomEncoder)

@@ -1,3 +1,5 @@
+import struct
+from milvus.thrift.ttypes import RowRecord
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 
 class QueryResponse:
@@ -68,3 +70,23 @@ class TopKQueryResultHelper:
     @classmethod
     def from_dict(cls, d):
         return cls.source_class(query_results=d['query_results'])
+
+class RowRecordHelper:
+    __type__ = '__RowRecordHelper__'
+    source_class = RowRecord
+
+    def __init__(self, source):
+        self.vector_data = source.vector_data
+        self.element_size = struct.calcsize('d')
+
+    def to_dict(self):
+        data = {
+            '__type__': self.__class__.__type__,
+            'data': list(struct.unpack('{}d'.format(int(len(self.vector_data)/self.element_size)), self.vector_data))
+        }
+        return data
+
+    @classmethod
+    def from_dict(cls, d):
+        data = struct.pack('{}d'.format(len(d['data'])), *d['data'])
+        return RowRecord(data)
