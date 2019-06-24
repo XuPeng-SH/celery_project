@@ -19,6 +19,16 @@ milvus.create_table(Prepare.table_schema(table_name, dimension=256, index_type=I
 vectors = Prepare.records([[random.random()for _ in range(256)] for _ in range(20)])
 milvus.add_vectors(table_name=table_name, records=vectors)
 
+param = {
+    'table_name': table_name,
+    'query_records': vectors,
+    'top_k': 5,
+}
+status, results = milvus.search_vectors(**param)
+print(results)
+print(status)
+
+
 # Get table row count
 _, result = milvus.get_table_row_count(table_name=table_name)
 print('Table {}, row counts: {}'.format(table_name, result))

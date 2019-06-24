@@ -19,7 +19,7 @@ def propagate_chain_get(terminal_node, timeout=None):
 ###########################################################################
 
 
-def query_vectors_1_n_1_workflow(table_id, vectors, topK):
+def query_vectors_1_n_1_workflow(table_id, vectors, topK, range_array=None):
     queue = settings.QUEUES
     reducer = merge_query_results.s(topK=topK).set(queue=queue)
     reducer_result = reducer.freeze()

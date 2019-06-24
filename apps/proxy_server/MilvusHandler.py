@@ -2,8 +2,9 @@ import logging
 from milvus import Milvus, Prepare, IndexType, Status
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
-                                  Exception)
+                                  Exception as ThriftExeception)
 import settings
+import workflow
 
 from milvus_celery.app_helper import create_app
 
@@ -34,65 +35,44 @@ class MilvusHandler:
         LOGGER.info('CreateTable: {}'.format(param))
         status = _milvus.create_table(param)
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         return status
 
     def DeleteTable(self, table_name):
         LOGGER.info('DeleteTalbe: {}'.format(table_name))
         status = _milvus.delete_table(table_name)
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         return table_name
 
     def AddVector(self, table_name, record_array):
         LOGGER.info('AddVectors to: {}'.format(table_name))
         status, ids = _milvus.add_vectors(table_name, record_array)
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         return ids
 
-    def SearchVector(self, table_name, query_record_array, topk, query_range_array=None):
+    def SearchVector(self, table_name, query_record_array, query_range_array, topk):
+        try:
+            async_result = workflow.query_vectors_1_n_1_workflow(table_name,
+                                                                 query_record_array,
+                                                                 topk,
+                                                                 query_range_array)
 
-        async_result = workflow.query_vectors_1_n_1_workflow(table_name,
-                                                             query_record_array,
-                                                             topk,
-                                                             query_range_array)
+            result = async_result.get(propagate=True, follow_parents=True)
 
-        result = async_result.get(propagate=True, follow_parents=True)
+            out = []
+            for each_request_topk in result:
+                inner = [QueryResult(id=each_result.id, score=each_result.score)
+                        for each_result in each_request_topk]
+                out.append(TopKQueryResult(inner))
 
-        for pos, r in enumerate(result):
-            LOGGER.info('--------------------Q: {}-------------------------'.format(pos))
-            for idx, i in enumerate(r):
-                LOGGER.info('{} - {} {}'.format(idx, i.id, i.score))
-        res = TopKQueryResult()
-        for top_k_query_results in result:
-            res.query_result_arrays.append([QueryResult(id=qr.id, score=qr.score)
-                                            for qr in top_k_query_results])
-        return res
+            return out
+        except Exception as exc:
+            # TODO
+            return []
 
-        # results = []
-        # topK = 5
-        # try:
-        #     for table_id in ['test_group']*1:
-        #         dim = 256
-        #         query_records = query_record_array
-        #         async_result = workflow.query_vectors_1_n_1_workflow(table_id, query_records, topK)
-        #         results.append(async_result)
-        #
-        #     for result in results:
-        #         ret = result.get(propagate=True, follow_parents=True)
-        #         if not ret:
-        #             logger.error('no topk')
-        #             continue
-        #         for pos, r in enumerate(ret):
-        #             logger.info('-------------Q:={}--------'.format(pos))
-        #             for idx, i in enumerate(r):
-        #                 logger.info('{} - \t{} {}'.format(idx, i.id, i.score))
-        # except Exception as exc:
-        #     logger.exception('')
-
-
-    def SearchVectorInFiles(self, table_name, file_id_array, query_record_array, topk, query_range_array=None):
+    def SearchVectorInFiles(self, table_name, file_id_array, query_record_array, query_range_array, topk):
         LOGGER.info('Searching Vectors in files...')
         res = search_vector_in_files.delay(table_name=table_name,
                                            file_id_array=file_id_array,
@@ -102,7 +82,7 @@ class MilvusHandler:
         status, result = res.get(timeout=1)
 
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         res = TopKQueryResult()
         for top_k_query_results in result:
             res.query_result_arrays.append([QueryResult(id=qr.id, score=qr.score)
@@ -113,20 +93,19 @@ class MilvusHandler:
         LOGGER.info('Describing table: {}'.format(table_name))
         status, table = _milvus.describe_table(table_name)
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         return table
 
     def GetTableRowCount(self, table_name):
         LOGGER.info('GetTableRowCount: {}'.format(table_name))
         status, count = _milvus.get_table_row_count(table_name)
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         return count
 
     def ShowTables(self):
         LOGGER.info('ShowTables ...')
         status, tables = _milvus.show_tables()
         if not status.OK():
-            raise Exception(code=status.code, reason=status.message)
+            raise ThriftExeception(code=status.code, reason=status.message)
         return tables
-

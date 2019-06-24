@@ -1,3 +1,4 @@
+import celery.exceptions
 import os
 ENV_PATH = os.environ.get('ENV_PATH', None)
 os.environ['ENV_PATH'] = os.path.dirname(__file__) if ENV_PATH is None else ENV_PATH

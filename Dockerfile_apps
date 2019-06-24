@@ -1,4 +1,5 @@
 FROM zilliz.azurecr.cn/milvus/celery:v0.0.1
+RUN apt update; apt install -y vim; apt install -y telnet
 WORKDIR /source
 ADD ./requirements_apps.txt ./
 RUN pip install -r requirements_apps.txt
