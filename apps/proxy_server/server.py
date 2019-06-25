@@ -4,7 +4,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from thrift.protocol import TBinaryProtocol, TCompactProtocol, TJSONProtocol
 from thrift.transport import TTransport, TSocket, TZlibTransport
 from thrift.server import TServer
-
 from milvus.thrift import MilvusService
 
 import settings
