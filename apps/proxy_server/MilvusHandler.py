@@ -3,51 +3,59 @@ from milvus import Milvus, Prepare, IndexType, Status
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
-import settings
+
 import workflow
-
 from milvus_celery.app_helper import create_app
-
 from configurations import config
+
 celery_app = create_app(config=config)
 
 LOGGER = logging.getLogger(__name__)
 
-uri = settings.THRIFTCLIENT_TRANSPORT
-_milvus = Milvus()
-_milvus.connect(uri=uri)
-
 
 class MilvusHandler:
 
-    def __init__(self):
+    def __init__(self, uri):
         self.log = {}
+        self.uri = uri
+        self.retry_times = 0
+        self.normal_times = 0
+        self.thrift_client = None
+
+    @property
+    def client(self):
+        if self.thrift_client:
+            return self.thrift_client
+
+        self.thrift_client = Milvus()
+        self.thrift_client.connect(uri=self.uri)
+        return self.thrift_client
 
     def Ping(self, args):
         LOGGER.info('Ping {}'.format(args))
-        ans = _milvus.server_status(args)
+        ans = self.client.server_status(args)
         if args == 'version':
-            ans = _milvus.server_version()
+            ans = self.client.server_version()
 
         return ans
 
     def CreateTable(self, param):
         LOGGER.info('CreateTable: {}'.format(param))
-        status = _milvus.create_table(param)
+        status = self.client.create_table(param)
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return status
 
     def DeleteTable(self, table_name):
         LOGGER.info('DeleteTalbe: {}'.format(table_name))
-        status = _milvus.delete_table(table_name)
+        status = self.client.delete_table(table_name)
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return table_name
 
     def AddVector(self, table_name, record_array):
         LOGGER.info('AddVectors to: {}'.format(table_name))
-        status, ids = _milvus.add_vectors(table_name, record_array)
+        status, ids = self.client.add_vectors(table_name, record_array)
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return ids
@@ -91,21 +99,21 @@ class MilvusHandler:
 
     def DescribeTable(self, table_name):
         LOGGER.info('Describing table: {}'.format(table_name))
-        status, table = _milvus.describe_table(table_name)
+        status, table = self.client.describe_table(table_name)
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return table
 
     def GetTableRowCount(self, table_name):
         LOGGER.info('GetTableRowCount: {}'.format(table_name))
-        status, count = _milvus.get_table_row_count(table_name)
+        status, count = self.client.get_table_row_count(table_name)
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return count
 
     def ShowTables(self):
         LOGGER.info('ShowTables ...')
-        status, tables = _milvus.show_tables()
+        status, tables = self.client.show_tables()
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return tables

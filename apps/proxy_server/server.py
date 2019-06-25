@@ -7,8 +7,8 @@ from thrift.server import TServer
 
 from milvus.thrift import MilvusService
 
-from MilvusHandler import MilvusHandler
 import settings
+from MilvusHandler import MilvusHandler
 
 import sys
 if sys.version_info[0] > 2:
@@ -25,7 +25,7 @@ class Protocol:
 
 def run():
     # TODO how to close
-    handler = MilvusHandler()
+    handler = MilvusHandler(uri=settings.THRIFTCLIENT_TRANSPORT)
     processor = MilvusService.Processor(handler)
 
     transport = settings.THRIFTSERVER_TRANSPORT
