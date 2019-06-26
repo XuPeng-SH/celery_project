@@ -7,8 +7,8 @@ import sys
 sys.path.append('.')
 from milvus import Milvus, Prepare, IndexType, Status
 from thrift.transport.TSocket import TSocket
-from milvus_server.server.MilvusHandler import Milvus as Ms
-from milvus_server import server
+from .server.MilvusHandler import Milvus as Ms
+from proxy_server import server
 
 
 class TestToServer:

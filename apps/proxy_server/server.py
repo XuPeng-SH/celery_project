@@ -23,8 +23,7 @@ class Protocol:
 
 
 def run():
-    # TODO how to close
-    handler = MilvusHandler(uri=settings.THRIFTCLIENT_TRANSPORT)
+    handler = MilvusHandler()
     processor = MilvusService.Processor(handler)
 
     transport = settings.THRIFTSERVER_TRANSPORT
@@ -65,10 +64,9 @@ def run():
     else:
         raise RuntimeError(
             "invalid configuration for THRIFTSERVER_PROTOCOL: {protocol}"
-                .format(protocol=settingss.THRIFTSERVER_PROTOCOL)
+                .format(protocol=settings.THRIFTSERVER_PROTOCOL)
         )
 
-    # TODO tfactory default
     server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
     server.serve()
 
