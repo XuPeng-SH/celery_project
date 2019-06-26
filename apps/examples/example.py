@@ -1,6 +1,6 @@
-# This program demos how to connect to Milvus vector database, 
-# create a vector table, 
-# insert 10 vectors, 
+# This program demos how to connect to Milvus vector database,
+# create a vector table,
+# insert 10 vectors,
 # and execute a vector similarity search.
 
 from milvus import Milvus, Prepare, IndexType, Status
@@ -8,7 +8,7 @@ import time
 
 # Milvus server IP address and port.
 # You may need to change _HOST and _PORT accordingly.
-_HOST = '127.0.0.1'
+_HOST = '192.168.1.233'
 _PORT = '19530'
 
 
