@@ -1,14 +1,16 @@
 import logging
-from sqlalchemy import (Column, Integer, Boolean,
+from sqlalchemy import (Integer, Boolean,
         String, BigInteger, func)
 from sqlalchemy.orm import relationship, backref
 
-from milvus_celery.db_base import DB
+# from milvus_celery.db_base import DB
+
+from . import db
 
 logger = logging.getLogger(__name__)
 
 
-class TableFile(DB.Model):
+class TableFile(db.Model):
     FILE_TYPE_NEW = 0
     FILE_TYPE_RAW = 1
     FILE_TYPE_TO_INDEX = 2
@@ -17,15 +19,15 @@ class TableFile(DB.Model):
 
     __tablename__ = 'TableFiles'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    table_id = Column(String(50))
-    engine_type = Column(Integer)
-    file_id = Column(String(50))
-    file_type = Column(Integer)
-    size = Column(Integer, default=0)
-    updated_time = Column(BigInteger)
-    created_on = Column(BigInteger)
-    date = Column(Integer)
+    id = db.Column(BigInteger, primary_key=True, autoincrement=True)
+    table_id = db.Column(String(50))
+    engine_type = db.Column(Integer)
+    file_id = db.Column(String(50))
+    file_type = db.Column(Integer)
+    size = db.Column(Integer, default=0)
+    updated_time = db.Column(BigInteger)
+    created_on = db.Column(BigInteger)
+    date = db.Column(Integer)
 
     table = relationship(
         'Table',
@@ -33,17 +35,17 @@ class TableFile(DB.Model):
         backref=backref('files', uselist=True, lazy='dynamic')
     )
 
-class Table(DB.Model):
+class Table(db.Model):
 
     __tablename__ = 'Tables'
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    table_id = Column(String(50))
-    dimension = Column(Integer)
-    engine_type = Column(Integer)
-    files_cnt = Column(BigInteger)
-    created_on = Column(BigInteger)
-    store_raw_data = Column(Boolean)
+    id = db.Column(BigInteger, primary_key=True, autoincrement=True)
+    table_id = db.Column(String(50))
+    dimension = db.Column(Integer)
+    engine_type = db.Column(Integer)
+    files_cnt = db.Column(BigInteger)
+    created_on = db.Column(BigInteger)
+    store_raw_data = db.Column(Boolean)
 
     def files_to_search(self, date_range=None):
         files = self.files.filter(TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE)

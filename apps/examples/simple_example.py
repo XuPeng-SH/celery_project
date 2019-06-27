@@ -7,10 +7,16 @@ milvus = Milvus()
 
 # Connect Milvus server.
 # You may need to change HOST and PORT accordingly.
-milvus.connect(host='localhost', port='19530')
+milvus.connect(host='192.168.1.233', port='19530')
+# milvus.connect(host='127.0.0.1', port='19531')
+
+# table_name = '500_501'
+table_name = '{}_{}'.format(random.randint(800,805), random.randint(800, 802))
 
 # Table name is defined
-table_name = 'demo_table'
+# table_name = 'yyyyy'
+# table_name = 'nnnns'
+# table_name = 'test_search_K2YcLOHW'
 
 # Create table: table name, vector dimension and index type
 milvus.create_table(Prepare.table_schema(table_name, dimension=256, index_type=IndexType.FLAT))
@@ -25,6 +31,7 @@ param = {
     'top_k': 5,
 }
 status, results = milvus.search_vectors(**param)
+print('4444444')
 print(results)
 print(status)
 

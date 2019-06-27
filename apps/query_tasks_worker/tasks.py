@@ -2,39 +2,55 @@ from random import randint
 from functools import reduce
 import numpy as np
 from collections import defaultdict
-from celery import maybe_signature, chord, group
+from celery import maybe_signature, chord, group, Task
 from celery.utils.log import get_task_logger
 from milvus import Milvus
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 from common.factories import TopKQueryResultFactory
 
-from query_tasks_worker.app import celery_app, db, redis_client, settings
-from query_tasks_worker.models import Table
+from milvus_celery import settings as celery_settings
+from . import redis_client, settings
+from .models import Table
 from milvus_celery.operations import SDKClient
 
-from query_tasks_worker.exceptions import TableNotFoundException
-from query_tasks_worker.factories import TableFactory, TableFileFactory
+from .exceptions import TableNotFoundException
 
 from milvus_celery.hash_ring import HashRing
+
+from . import celery_app
 
 logger = get_task_logger(__name__)
 
 
-@celery_app.task
-def get_queryable_files(table_id, date_range=None):
+def get_table(table_id):
     try:
-        table = db.Session.query(Table).filter_by(table_id=table_id).first()
+        # table = db.Session.query(Table).filter_by(table_id=table_id).first()
+        table = Table.query.filter_by(table_id=table_id).first()
     except Exception as exc:
         raise TableNotFoundException(exc)
+
+    if not table:
+        logger.error('TableNotFoundException')
+
+    return table
+
+
+@celery_app.task
+def get_queryable_files(table_id, date_range=None):
+    try_time = 3
+    table = None
+    while try_time > 0:
+        try_time -= 1
+        table = get_table(table_id)
+        if table: break
 
     if not table:
         raise TableNotFoundException(table_id)
 
     files = table.files_to_search()
-    result = [f.id for f in files]
 
     routing = {}
-    servers = redis_client.smembers(settings.SERVERS_MONITOR_KEY)
+    servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)
     ring = HashRing(servers)
     logger.debug('Avaialble servers: {}'.format(servers))
     for f in files:
@@ -53,7 +69,7 @@ def get_queryable_files(table_id, date_range=None):
 def query_files(routing, vectors, topK):
     logger.debug('Querying routing {}'.format(routing))
 
-    if not settings.MILVUS_CLIENT:
+    if not celery_settings.MILVUS_CLIENT:
         results = [TopKQueryResultFactory() for _ in range(len(vectors))]
         return results
 
