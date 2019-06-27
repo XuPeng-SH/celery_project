@@ -1,3 +1,4 @@
+import sys
 import logging
 from functools import wraps
 from milvus import Milvus, Prepare, IndexType, Status
@@ -6,11 +7,7 @@ from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
 
-# import workflow
-from milvus_celery.app_helper import create_app
-from configurations import config
-import sys
-celery_app = create_app(config=config)
+from . import workflow
 import settings
 
 LOGGER = logging.getLogger('proxy_server')
@@ -54,7 +51,7 @@ class ConnectionHandler:
                 except NotConnectError:
                     self._retry_times += 1
                     if self.can_retry:
-                        LOGGER.info('Reconnecting .. {}'.format(self._retry_times))
+                        LOGGER.warning('Reconnecting .. {}'.format(self._retry_times))
                         self.reconnect(RECONNECT_URI)
 
             if not self.can_retry:
