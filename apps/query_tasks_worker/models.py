@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy import (Integer, Boolean,
-        String, BigInteger, func)
+        String, BigInteger, func, and_)
 from sqlalchemy.orm import relationship, backref
 
 # from milvus_celery.db_base import DB
@@ -36,6 +36,8 @@ class TableFile(db.Model):
     )
 
 class Table(db.Model):
+    TO_DELETE = 1
+    NORMAL = 0
 
     __tablename__ = 'Tables'
 
@@ -46,7 +48,11 @@ class Table(db.Model):
     files_cnt = db.Column(BigInteger)
     created_on = db.Column(BigInteger)
     store_raw_data = db.Column(Boolean)
+    state = db.Column(Integer)
 
     def files_to_search(self, date_range=None):
-        files = self.files.filter(TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE)
+        files = self.files.filter(and_(
+            TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE,
+            TableFile.file_type!=TableFile.FILE_TYPE_NEW
+            )
         return files

@@ -1,6 +1,7 @@
 from random import randint
 from functools import reduce
 import numpy as np
+from sqlalchemy import and_
 from collections import defaultdict
 from celery import maybe_signature, chord, group, Task
 from celery.utils.log import get_task_logger
@@ -24,8 +25,10 @@ logger = get_task_logger(__name__)
 
 def get_table(table_id):
     try:
-        # table = db.Session.query(Table).filter_by(table_id=table_id).first()
-        table = Table.query.filter_by(table_id=table_id).first()
+        table = Table.query.filter(and_(
+            Table.table_id==table_id,
+            Table.state!=Table.TO_DELETE,
+            )).first()
     except Exception as exc:
         raise TableNotFoundException(exc)
 
