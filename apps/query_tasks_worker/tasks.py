@@ -50,7 +50,8 @@ def get_queryable_files(table_id, date_range=None):
     if not table:
         raise TableNotFoundException(table_id)
 
-    files = table.files_to_search()
+    logger.debug(date_range)
+    files = table.files_to_search(date_range)
 
     routing = {}
     servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)

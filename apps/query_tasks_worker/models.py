@@ -1,9 +1,7 @@
 import logging
 from sqlalchemy import (Integer, Boolean,
-        String, BigInteger, func, and_)
+        String, BigInteger, func, and_, or_)
 from sqlalchemy.orm import relationship, backref
-
-# from milvus_celery.db_base import DB
 
 from . import db
 
@@ -53,6 +51,12 @@ class Table(db.Model):
     def files_to_search(self, date_range=None):
         files = self.files.filter(and_(
             TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE,
-            TableFile.file_type!=TableFile.FILE_TYPE_NEW
+            TableFile.file_type!=TableFile.FILE_TYPE_NEW,
             ))
+        if date_range:
+            files = files.filter(
+                    or_(
+                        and_(TableFile.date>=d[0], TableFile.date<d[1]) for d in date_range
+                        )
+                    )
         return files
