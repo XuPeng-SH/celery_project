@@ -1,11 +1,13 @@
 import sys
 import logging
 from functools import wraps
+from celery.exceptions import ChordError
 from milvus import Milvus, Prepare, IndexType, Status
 from milvus.client.Exceptions import NotConnectError
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
+from query_tasks_worker.exceptions import TableNotFoundException
 
 import workflow
 import settings
@@ -110,12 +112,30 @@ class MilvusHandler:
         return ids
 
     def SearchVector(self, table_name, query_record_array, query_range_array, topk):
-        async_result = workflow.query_vectors_1_n_1_workflow(table_name,
-                                                             query_record_array,
-                                                             topk,
-                                                             query_range_array)
+        try:
+            async_result = workflow.query_vectors_1_n_1_workflow(table_name,
+                                                                 query_record_array,
+                                                                 topk,
+                                                                 query_range_array)
+        except TableNotFoundException as exc:
+            raise ThriftExeception(code=exc.code, reason=exc.message)
 
-        result = async_result.get(propagate=True, follow_parents=True)
+        try:
+            result = async_result.get(propagate=True, follow_parents=True)
+        except ChordError as exc:
+            message = str(exc)
+            start = message.index('Status')
+            end = message[start:].index(')')
+            message = message[start:start+end]
+            LOGGER.error(message)
+            submsg = message[7:-1]
+            infos = [s.strip() for s in submsg.split(',')]
+            infos = [info.split('=')[1] for info in infos]
+            raise ThriftExeception(code=int(infos[0]), reason=infos[1])
+        except TableNotFoundException as exc:
+            raise ThriftExeception(code=exc.code, reason=exc.message)
+        except Exception as exc:
+            LOGGER.error(exc)
 
         out = []
         for each_request_topk in result:

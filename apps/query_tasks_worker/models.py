@@ -54,5 +54,5 @@ class Table(db.Model):
         files = self.files.filter(and_(
             TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE,
             TableFile.file_type!=TableFile.FILE_TYPE_NEW
-            )
+            ))
         return files
