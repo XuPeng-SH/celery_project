@@ -7,7 +7,7 @@ from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
 
-from . import workflow
+import workflow
 import settings
 
 LOGGER = logging.getLogger('proxy_server')
