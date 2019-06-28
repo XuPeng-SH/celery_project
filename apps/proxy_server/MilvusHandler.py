@@ -62,7 +62,6 @@ class ConnectionHandler:
 connect = ConnectionHandler(uri=settings.THRIFTCLIENT_TRANSPORT)
 
 
-
 class MilvusHandler:
 
     def __init__(self):
