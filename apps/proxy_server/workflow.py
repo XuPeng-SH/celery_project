@@ -16,8 +16,6 @@ def propagate_chain_get(terminal_node, timeout=None):
 def range_to_date(range_obj):
     start = datetime.datetime.strptime(range_obj.start_value, '%Y-%m-%d')
     end = datetime.datetime.strptime(range_obj.end_value, '%Y-%m-%d')
-    if start.date() == end.date():
-        end += datetime.timedelta(days=1)
     return ((start.year-1900)*10000 + (start.month-1)*100 + start.day
             , (end.year-1900)*10000 + (end.month-1)*100 + end.day)
 
