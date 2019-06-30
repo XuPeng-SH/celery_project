@@ -7,9 +7,9 @@ from milvus.client.Exceptions import NotConnectError
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
-# from query_tasks_worker.exceptions import TableNotFoundException
+from query_tasks_worker.exceptions import TableNotFoundException
 
-# import workflow
+import workflow
 import settings
 
 LOGGER = logging.getLogger('proxy_server')
