@@ -8,6 +8,7 @@ from milvus.thrift import MilvusService
 
 import settings
 from MilvusHandler import MilvusHandler
+from TThreadPoolServerEnhance import TThreadPoolServerEnhance
 
 import sys
 if sys.version_info[0] > 2:
@@ -68,7 +69,7 @@ def run():
         )
 
     # server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
-    server = TServer.TThreadPoolServer(processor, transport, tfactory, pfactory)
+    server = TThreadPoolServerEnhance(processor, transport, tfactory, pfactory)
     server.daemon = True
     server.setNumThreads(100)
     

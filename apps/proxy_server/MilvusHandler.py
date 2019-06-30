@@ -8,9 +8,9 @@ from milvus.client.Exceptions import NotConnectError
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
-from query_tasks_worker.exceptions import TableNotFoundException
+# from query_tasks_worker.exceptions import TableNotFoundException
 
-import workflow
+# import workflow
 import settings
 
 LOGGER = logging.getLogger('proxy_server')
@@ -26,8 +26,8 @@ class ConnectionHandler:
 
     @property
     def client(self):
-        if self.thrift_client:
-            return self.thrift_client
+        # if self.thrift_client:
+        #     return self.thrift_client
         self.thrift_client = Milvus()
         self.thrift_client.connect(uri=self.uri)
         return self.thrift_client
@@ -53,13 +53,17 @@ class ConnectionHandler:
 
                 except (NotConnectError, socket.timeout) as exc:
                     LOGGER.error(exc)
+                    # import pdb;pdb.set_trace()
                     self._retry_times += 1
                     if self.can_retry:
                         LOGGER.warning('Reconnecting .. {}'.format(self._retry_times))
                         self.reconnect(RECONNECT_URI)
+                    else:
+                        sys.exit(1)
+                        # raise SystemExit
 
-            if not self.can_retry:
-                sys.exit(1)
+            # if not self.can_retry:
+                # sys.exit(1)
         return wrappers
 
 

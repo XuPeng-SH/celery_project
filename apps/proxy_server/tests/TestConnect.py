@@ -8,10 +8,9 @@ import pytest
 
 class TestConnect:
     milvus = Milvus()
-    cnn_status = milvus.connect(uri='tcp://localhost:9091')
+    cnn_status = milvus.connect(uri='tcp://localhost:9090')
 
     def test_false_connect1(self):
-
 
         _, res = self.milvus.show_tables()
 
