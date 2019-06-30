@@ -7,9 +7,9 @@ from milvus.client.Exceptions import NotConnectError
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftExeception)
-from query_tasks_worker.exceptions import TableNotFoundException
+# from query_tasks_worker.exceptions import TableNotFoundException
 
-import workflow
+# import workflow
 import settings
 
 LOGGER = logging.getLogger('proxy_server')
@@ -82,10 +82,12 @@ class MilvusHandler:
     @connect.retry
     def Ping(self, args):
         LOGGER.info('Ping {}'.format(args))
-        ans = self.client.server_status(args)
+        status, ans = self.client.server_status(args)
+        # import pdb; pdb.set_trace()
         if args == 'version':
-            ans = self.client.server_version()
-        return ans
+            status, ans = self.client.server_version()
+        if status.OK():
+            return ans
 
     @connect.retry
     def CreateTable(self, param):
@@ -94,6 +96,12 @@ class MilvusHandler:
         if not status.OK():
             raise ThriftExeception(code=status.code, reason=status.message)
         return status
+
+    @connect.retry
+    def HasTable(self, table_name):
+        LOGGER.info('If {} exsits...'.format(table_name))
+        has_table = self.client.has_table(table_name)
+        return has_table
 
     @connect.retry
     def DeleteTable(self, table_name):

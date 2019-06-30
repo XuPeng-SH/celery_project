@@ -1,38 +1,51 @@
 from milvus import Milvus, Prepare, IndexType
 from milvus.client.Abstract import TopKQueryResult
+from milvus.client.Exceptions import ParamError
 import random
+import pytest
 from pprint import pprint
 
 
 class TestFromServer:
     milvus = Milvus()
     table_name_exists = 'test01'
-    table_name_not_exists = 'table' + str(random.random())
     cnn_status = milvus.connect(uri='tcp://localhost:9090')
+    milvus.create_table({'table_name': table_name_exists, 'dimension':256, 'index_type': IndexType.FLAT})
 
+    # if not milvus.has_table(table_name_exists)
+    table_name_for_create = 'table' + str(random.random())
+    table_name_not_exists = 'table '+ str(random.random())
 
     def test_client_version(self):
         res = self.milvus.client_version()
-        assert res == '0.1.6'
+        assert res == '0.1.12'
 
     def test_connected(self):
         res = self.milvus.connected
         assert res
 
     def test_server_version(self):
-        res = self.milvus.server_version()
+        status, res = self.milvus.server_version()
         assert res == '0.3.0'
 
     def test_create_table(self):
-        res0 = self.milvus.create_table(Prepare.table_schema(table_name=self.table_name_not_exists,
+        res0 = self.milvus.create_table(Prepare.table_schema(table_name=self.table_name_for_create,
                                                              dimension=256,
                                                              index_type=IndexType.FLAT,
                                                              store_raw_vector=False))
         assert res0.OK()
-        res1 = self.milvus.create_table(Prepare.table_schema(table_name=self.table_name_exists,
+        with pytest.raises(ParamError):
+            res1 = self.milvus.create_table(Prepare.table_schema(table_name=self.table_name_exists,
                                                              dimension=0,
                                                              index_type=IndexType.FLAT))
-        assert not res1.OK()
+            assert not res1.OK()
+
+    def test_has_table(self):
+        res = self.milvus.has_table(self.table_name_exists)
+        assert res
+
+        res = self.milvus.has_table(self.table_name_not_exists)
+        assert not res
 
     def test_describe_table(self):
         res, table = self.milvus.describe_table(self.table_name_exists)
@@ -43,7 +56,7 @@ class TestFromServer:
         assert not res.OK()
         assert not table
 
-    def test_show_talbes(self):
+    def test_show_tables(self):
         status, tables = self.milvus.show_tables()
         assert status.OK()
         assert isinstance(tables, list)
