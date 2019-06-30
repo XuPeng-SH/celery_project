@@ -1,5 +1,6 @@
 import sys
 import logging
+import socket
 from functools import wraps
 from celery.exceptions import ChordError
 from milvus import Milvus, Prepare, IndexType, Status
@@ -50,7 +51,8 @@ class ConnectionHandler:
                 try:
                     return f(*args, **kwargs)
 
-                except NotConnectError:
+                except (NotConnectError, socket.timeout) as exc:
+                    LOGGER.error(exc)
                     self._retry_times += 1
                     if self.can_retry:
                         LOGGER.warning('Reconnecting .. {}'.format(self._retry_times))
