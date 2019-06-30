@@ -49,14 +49,19 @@ class Table(db.Model):
     state = db.Column(Integer)
 
     def files_to_search(self, date_range=None):
-        files = self.files.filter(and_(
-            TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE,
-            TableFile.file_type!=TableFile.FILE_TYPE_NEW,
-            ))
+        cond = and_(
+                TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE,
+                TableFile.file_type!=TableFile.FILE_TYPE_NEW,
+        )
         if date_range:
-            files = files.filter(
-                    or_(
-                        and_(TableFile.date>=d[0], TableFile.date<d[1]) for d in date_range
-                        )
+            cond = and_(
+                cond,
+                or_(
+                    and_(TableFile.date>=d[0], TableFile.date<d[1]) for d in date_range
                     )
+            )
+
+        files = self.files.filter(cond)
+
+        logger.debug('DATE_RANGE: {}'.format(date_range))
         return files

@@ -19,7 +19,7 @@ def range_to_date(range_obj):
     if start.date() == end.date():
         end += datetime.timedelta(days=1)
     return ((start.year-1900)*10000 + (start.month-1)*100 + start.day
-            , end.year*10000 + (end.month-1)*100 + end.day)
+            , (end.year-1900)*10000 + (end.month-1)*100 + end.day)
 
 ###########################################################################
 ##                   1. QueryFile
