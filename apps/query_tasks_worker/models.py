@@ -57,7 +57,7 @@ class Table(db.Model):
             cond = and_(
                 cond,
                 or_(
-                    and_(TableFile.date>=d[0], TableFile.date<d[1]) for d in date_range
+                    and_(TableFile.date>=d[0], TableFile.date<=d[1]) for d in date_range
                     )
             )
 
