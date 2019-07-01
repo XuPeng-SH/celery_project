@@ -2,14 +2,13 @@ import os
 ENV_PATH = os.environ.get('ENV_PATH', None)
 os.environ['ENV_PATH'] = os.path.dirname(__file__) if ENV_PATH is None else ENV_PATH
 
+import fire
+
 import sys
 sys.path.append('..')
-import logging
-import fire
 from milvus_celery import settings
 
-logging.basicConfig(level=logging.INFO)
-# logging.basicConfig(level=logging.DEBUG if settings.DEBUG else logging.INFO)
+import logging
 logger = logging.getLogger(__name__)
 
 class Monitor:
