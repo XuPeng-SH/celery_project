@@ -1,5 +1,7 @@
 import os
 
+
+CELERYD_HIJACK_ROOT_LOGGER = False
 CELERY_ACCEPT_CONTENT = ['customjson']
 CELERY_TASK_SERIALIZER = 'customjson'
 CELERY_RESULT_SERIALIZER = 'customjson'
