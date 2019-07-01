@@ -11,11 +11,13 @@ env.read_env(env_path)
 
 TESTING = env.bool('TESTING', False)
 
-DB_URI = env.str('DB_URI')
+DB_URI = env.str('DB_URI', '')
 
 CELERY_APP_CONFIG_FILE = env.str('CELERY_APP_CONFIG_FILE')
 CELERY_BROKER_URL = env.str('CELERY_BROKER_URL')
 CELERY_BACKEND_URL = env.str('CELERY_BACKEND_URL')
+
+REDIS_CLIENT = env.bool('REDIS_CLIENT', False)
 
 REDIS_DB = env.int('REDIS_DB', 0)
 REDIS_HOST = env.str('REDIS_HOST', 'localhost')
@@ -27,9 +29,12 @@ SERVERS_MONITOR_KEY = env.str('SERVERS_MONITOR_KEY', '')
 DEBUG = env.bool('DEBUG', False)
 
 LOG_LEVEL = env.str('LOG_LEVEL', 'DEBUG' if DEBUG else 'INFO')
+LOG_PATH = env.str('LOG_PATH', '/tmp/celery')
+LOG_NAME = env.str('LOG_NAME', 'milvus_celery')
+TIMEZONE = env.str('TIMEZONE', 'UTC')
 
 from milvus_celery import config_logger
-config_logger.config(LOG_LEVEL)
+config_logger.config(LOG_LEVEL, LOG_PATH, LOG_NAME, TIMEZONE)
 
 MILVUS_CLIENT = env.bool('MILVUS_CLIENT', False)
 MILVUS_SERVER_HOST = env.str('MILVUS_SERVER_HOST', None)
