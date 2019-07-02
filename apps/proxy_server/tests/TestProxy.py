@@ -18,7 +18,7 @@ class TestFromServer:
 
     def test_client_version(self):
         res = self.milvus.client_version()
-        assert res == '0.1.12'
+        assert res == '0.1.13'
 
     def test_connected(self):
         res = self.milvus.connected

@@ -68,10 +68,10 @@ def run():
                 .format(protocol=settings.THRIFTSERVER_PROTOCOL)
         )
 
-    # server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
-    server = TThreadPoolServerEnhance(processor, transport, tfactory, pfactory)
-    server.daemon = True
-    server.setNumThreads(100)
+    server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+    # server = TThreadPoolServerEnhance(processor, transport, tfactory, pfactory)
+    # server.daemon = True
+    # server.setNumThreads(100)
     
     server.serve()
 
