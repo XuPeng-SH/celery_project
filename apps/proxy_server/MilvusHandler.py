@@ -1,11 +1,8 @@
-import sys
 import inspect
 import logging
-import socket
 from functools import wraps
 from celery.exceptions import ChordError
 from milvus import Milvus, Prepare, IndexType, Status
-from milvus.client.Exceptions import NotConnectError
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftException)
@@ -13,9 +10,8 @@ from query_tasks_worker.exceptions import TableNotFoundException
 
 import workflow
 import settings
-
 LOGGER = logging.getLogger('proxy_server')
-RECONNECT_URI = settings.THRIFTCLIENT_TRANSPORT
+CONNECT_URI = settings.THRIFTCLIENT_TRANSPORT
 
 
 class ConnectionHandler:
@@ -70,52 +66,9 @@ class ConnectionHandler:
         else:
             self.default_error_handler = exception
             return exception
-    
 
 
-connect = ConnectionHandler(uri=settings.THRIFTCLIENT_TRANSPORT)
-
-class err:
-    def __init__(self):
-        self.err_handlers = {}
-        self.default_error_handler = None
-
-
-    def err_handler(self, exception):
-        if inspect.isclass(exception) and issubclass(exception, Exception):
-            def wrappers(func):
-                self.err_handlers[exception] = func
-                return func
-            return wrappers
-        else:
-            self.default_error_handler = exception
-            return exception
-
-@connect.err_handler(ThriftException)
-def ThriftExceptionHandler(e):
-    LOGGER.error(e)
-    raise e
-
-@connect.err_handler(NotConnectError)
-def NotConnectErrorHandler(e):
-    LOGGER.error(e)
-    connect._retry_times += 1
-    if connect.can_retry:
-        LOGGER.warning('Reconnecting .. {}'.format(connect._retry_times))
-        connect.reconnect(RECONNECT_URI)
-    else:
-        sys.exit(1)
-
-
-@connect.err_handler(socket.timeout)
-def TimeOutHandler(e):
-    LOGGER.error(e)
-    connect._retry_times += 1
-    if connect.can_retry:
-        LOGGER.warning('Reconnecting .. {}'.format(connect._retry_times))
-        connect.reconnect(RECONNECT_URI)
-    else:
-        sys.exit(1)
+connect = ConnectionHandler(uri=CONNECT_URI)
 
 
 class MilvusHandler:
@@ -126,7 +79,7 @@ class MilvusHandler:
 
     @property
     def client(self):
-        global connect
+        # global connect
 
         self.thrift_client = connect.client
         return self.thrift_client

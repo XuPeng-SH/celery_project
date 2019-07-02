@@ -8,6 +8,7 @@ from milvus.thrift import MilvusService
 
 import settings
 from MilvusHandler import MilvusHandler
+import ErrorHandlers
 from TThreadPoolServerEnhance import TThreadPoolServerEnhance
 
 import sys
