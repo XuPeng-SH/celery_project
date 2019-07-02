@@ -41,7 +41,6 @@ class SDKClient(object):
 
         if status != Status.SUCCESS:
             raise SDKClientSearchVectorException(str(status))
-        pprint(results)
 
         return results
 
@@ -54,6 +53,5 @@ class SDKClient(object):
 
         if status != Status.SUCCESS:
             raise SDKClientSearchVectorException(str(status))
-        pprint(results)
 
         return results
