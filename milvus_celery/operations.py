@@ -1,9 +1,13 @@
+import logging
 import random
 from pprint import pprint
 from milvus_celery import settings
 from milvus import Milvus, Prepare, IndexType, Status
 from milvus_celery.exceptions import (SDKClientConnectionException,
         SDKClientSearchVectorException)
+
+logger = logging.getLogger(__name__)
+
 
 class SDKClient(object):
     def __init__(self, host=None, port=None):
@@ -14,7 +18,7 @@ class SDKClient(object):
     def init_client(self):
         self.client = Milvus()
         try:
-            status = self.client.connect(host=self.host, port=self.port)
+            status = self.client.connect(host=self.host, port=self.port, timeout=settings.TIMEOUT)
         except Exception as exc:
             raise SDKClientConnectionException(str(exc))
 
