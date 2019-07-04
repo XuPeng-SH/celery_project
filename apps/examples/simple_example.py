@@ -19,11 +19,12 @@ table_name = '{}_{}'.format(random.randint(800,805), random.randint(800, 802))
 # table_name = 'test_search_K2YcLOHW'
 
 # Create table: table name, vector dimension and index type
-milvus.create_table(Prepare.table_schema(table_name, dimension=256, index_type=IndexType.FLAT))
+milvus.create_table(dict(table_name=table_name, dimension=256, index_type=IndexType.FLAT))
 
 # Insert 20 256-dim-vectors into demo_table
-vectors = Prepare.records([[random.random()for _ in range(256)] for _ in range(20)])
+vectors = [[random.random()for _ in range(256)] for _ in range(200)]
 milvus.add_vectors(table_name=table_name, records=vectors)
+vectors = [[random.random()for _ in range(256)] for _ in range(10)]
 
 param = {
     'table_name': table_name,
@@ -31,10 +32,8 @@ param = {
     'top_k': 5,
 }
 status, results = milvus.search_vectors(**param)
-print('4444444')
 print(results)
 print(status)
-
 
 # Get table row count
 _, result = milvus.get_table_row_count(table_name=table_name)
