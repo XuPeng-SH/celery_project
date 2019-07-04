@@ -97,7 +97,7 @@ def reduce_one_request_files_results(files_topk_results, topK):
     topk_results = []
     for file_topk_results in files_topk_results:
         topk_results.extend(file_topk_results)
-        topk_results = sorted(topk_results, key=lambda x:x.score)[:topK]
+        topk_results = sorted(topk_results, key=lambda x:x.distance)[:topK]
     return TopKQueryResult(topk_results)
 
 @celery_app.task
@@ -116,8 +116,7 @@ def merge_query_results(files_n_topk_results, topK):
     for files_collection in files_n_topk_results:
         for request_pos, each_request_results in enumerate(files_collection):
             request_results[request_pos].extend(each_request_results)
-            request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.score,
-                    reverse=True)[:topK]
+            request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.distance)[:topK]
 
     results = sorted(request_results.items())
     results = [value[1] for value in results]

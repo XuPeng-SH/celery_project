@@ -149,7 +149,7 @@ class MilvusHandler:
 
         out = []
         for each_request_topk in result:
-            inner = [QueryResult(id=each_result.id, score=each_result.score)
+            inner = [QueryResult(id=each_result.id, distance=each_result.distance)
                     for each_result in each_request_topk]
             out.append(TopKQueryResult(inner))
 
@@ -169,7 +169,7 @@ class MilvusHandler:
             raise ThriftExeception(code=status.code, reason=status.message)
         res = TopKQueryResult()
         for top_k_query_results in result:
-            res.query_result_arrays.append([QueryResult(id=qr.id, score=qr.score)
+            res.query_result_arrays.append([QueryResult(id=qr.id, distance=qr.distance)
                                             for qr in top_k_query_results])
         return res
 
