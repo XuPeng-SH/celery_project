@@ -39,19 +39,19 @@ class QueryResultHelper:
     source_class = QueryResult
 
     def __init__(self, source):
-        self.score = source.score
+        self.distance = source.distance
         self.id = source.id
 
     def to_dict(self):
         return {
             '__type__': self.__class__.__type__,
-            'score': self.score,
+            'distance': self.distance,
             'id': self.id,
         }
 
     @classmethod
     def from_dict(cls, d):
-        return cls.source_class(score=d['score'], id=d['id'])
+        return cls.source_class(distance=d['distance'], id=d['id'])
 
 
 class TopKQueryResultHelper:
