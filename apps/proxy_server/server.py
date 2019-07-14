@@ -67,7 +67,8 @@ def run():
                 .format(protocol=settings.THRIFTSERVER_PROTOCOL)
         )
 
-    server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+    # server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
+    server = TServer.TForkingServer(processor, transport, tfactory, pfactory)
     # server = TServer.TThreadPoolServer(processor, transport, tfactory, pfactory)
     # server.daemon = True
     # server.setNumThreads(100)
