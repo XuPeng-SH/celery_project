@@ -8,7 +8,7 @@ ENDC='\033[0m'
 function build_image() {
     dockerfile=$1
     remote_registry=$2
-    tagged=$3
+    tagged=$2
     buildcmd="docker build -t ${tagged} -f ${dockerfile} ."
     echo -e "${BOLD}$buildcmd${NORMAL}"
     $buildcmd
