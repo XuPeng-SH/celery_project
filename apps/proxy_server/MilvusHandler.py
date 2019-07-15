@@ -114,6 +114,14 @@ class MilvusHandler:
         return table_name
 
     @connect.retry
+    def BuildIndex(self, table_name):
+        LOGGER.info('BuildIndex: {}'.format(table_name))
+        status = self.client.build_index(table_name)
+        if not status.OK():
+            raise ThriftExeception(code=status.code, reason=status.message)
+        return table_name
+
+    @connect.retry
     def AddVector(self, table_name, record_array):
         LOGGER.info('AddVectors to: {}'.format(table_name))
         status, ids = self.client.add_vectors(table_name, record_array)
