@@ -1,3 +1,4 @@
+import sys
 import inspect
 import logging
 from functools import wraps
@@ -26,23 +27,27 @@ class ConnectionHandler:
 
     @contextmanager
     def connect_context(self):
-        while self.can_retry:
-            try:
+        try:
 
-                self.thrift_client.connect(uri=self.uri)
+            self.thrift_client.connect(uri=self.uri)
 
-            except Exception as e:
-                handler = self.err_handlers.get(e.__class__, None)
-                if handler:
-                    handler(e)
-                else:
-                    raise e
+        # TODO exceptions
+        except Exception as e:
+            handler = self.err_handlers.get(e.__class__, None)
+            if handler:
+                handler(e)
+            else:
+                raise e
         if not self.can_retry:
             sys.exit(1)
 
         yield
 
-        self.thrift_client.disconnect()
+        try:
+
+            self.thrift_client.disconnect()
+        except Exception:
+            self.thrift_client = Milvus()
 
     def error_connector(self, func):
         @wraps(func)
