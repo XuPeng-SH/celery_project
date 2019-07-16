@@ -66,8 +66,10 @@ LOGGING = {
         'proxy_server': {
             'handlers': ['console'],
             'level': LOG_LEVEL,
+            'propagate': False,
         },
     },
+    'propagate': False
 }
 
 if LOG_LEVEL == 'DEBUG':
@@ -77,12 +79,12 @@ if LOG_LEVEL == 'DEBUG':
             '()': ColorfulFormatter,
         },
     }
-    LOGGING['handlers']['proxy_server_console'] = {
+    LOGGING['handlers']['colo_console'] = {
         'class': 'logging.StreamHandler',
         'formatter': 'colorful_console',
     }
     LOGGING['loggers']['proxy_server'] = {
-        'handlers': ['proxy_server_console'],
+        'handlers': ['colo_console'],
         'level': LOG_LEVEL,
     }
 

@@ -3,7 +3,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from thrift.protocol import TBinaryProtocol, TCompactProtocol, TJSONProtocol
 from thrift.transport import TTransport, TSocket, TZlibTransport
-from thrift.server import TServer, TProcessPoolServer
+from thrift.server import TServer
+from thrift.server.TProcessPoolServer import TProcessPoolServer
+from thrift.server.TNonblockingServer import TNonblockingServer
 from milvus.thrift import MilvusService
 
 import settings
@@ -69,13 +71,14 @@ def run():
                 .format(protocol=settings.THRIFTSERVER_PROTOCOL)
         )
 
+    # tfactory = TTransport.TFramedTransportFactory()
+    # pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
-    # server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
     # server = TServer.TForkingServer(processor, transport, tfactory, pfactory)
-    server = TProcessPoolServer(processor, transport, tfactory, pfactory)
-    # server = TServer.TThreadPoolServer(processor, transport, tfactory, pfactory)
+    #server = TProcessPoolServer(processor, transport, tfactory, pfactory)
+    server = TNonblockingServer(processor, transport)
 
-    server.setNumWorkers(12)
+    # server.setNumWorkers(12)
     server.serve()
 
 

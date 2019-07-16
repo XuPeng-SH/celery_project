@@ -5,9 +5,8 @@ import faker
 import random
 import sys
 sys.path.append('.')
-from milvus import Milvus, Prepare, IndexType, Status
-from thrift.transport.TSocket import TSocket
-from .server.MilvusHandler import Milvus as Ms
+from milvus import Milvus, IndexType, Status
+from proxy_server.MilvusHandler import Milvus as Ms
 from proxy_server import server
 
 
@@ -36,7 +35,6 @@ class TestToServer:
         ans = self.fake_milvus.add_vectors('fake1', 'fake2')
         assert ans == ['aaaa']
 
-    def test_search_vector(self, search_vectors):
 
     @mock.patch.object(Ms, 'describe_table')
     def test_describe_table(self, describe_table):

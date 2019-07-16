@@ -1,67 +1,97 @@
 from milvus import Milvus, Prepare, IndexType
 from milvus.client.Abstract import TopKQueryResult
 from milvus.client.Exceptions import ParamError
+from milvus.settings import DefaultConfig
+from milvus import __version__
 import random
 import pytest
+import time
 from pprint import pprint
 
 
 class TestFromServer:
-    milvus = Milvus()
-    table_name_exists = 'test01'
-    cnn_status = milvus.connect(uri='tcp://localhost:9090')
-    milvus.create_table({'table_name': table_name_exists, 'dimension':256, 'index_type': IndexType.FLAT})
 
-    # if not milvus.has_table(table_name_exists)
-    table_name_for_create = 'table' + str(random.random())
-    table_name_not_exists = 'table '+ str(random.random())
+    @pytest.fixture
+    def connect(self, request):
+        milvus = Milvus()
+        DefaultConfig.THRIFTCLIENT_FRAMED = True
+        milvus.connect(uri='tcp://127.0.0.1:9090')
 
-    def test_client_version(self):
-        res = self.milvus.client_version()
-        assert res == '0.1.13'
+        def fin():
+            try:
+                milvus.disconnect()
+            except Exception:
+                pass
 
-    def test_connected(self):
-        res = self.milvus.connected
+        request.addfinalizer(fin)
+        return milvus
+
+
+    @pytest.fixture
+    def table(self, request, connect):
+        table_name = 'test' + str(random.randint(00000, 99999))
+        dim = 256
+        param = {'table_name': table_name,
+                 'dimension': dim,
+                 'index_type': IndexType.FLAT,
+                 'store_raw_vector': False}
+        connect.create_table(param)
+
+        def teardown():
+            _, tables = connect.show_tables()
+            map(connect.delete_table, tables)
+
+        request.addfinalizer(teardown)
+        return table_name
+
+    def test_client_version(self, connect):
+        res = connect.client_version()
+        assert res == __version__
+
+    def test_connected(self, connect):
+        res = connect.connected
         assert res
 
-    def test_server_version(self):
-        status, res = self.milvus.server_version()
-        assert res == '0.3.0'
+    def test_server_version(self, connect):
+        status, res = connect.server_version()
+        assert res == '0.3.1'
 
-    def test_create_table(self):
-        res0 = self.milvus.create_table(Prepare.table_schema(table_name=self.table_name_for_create,
-                                                             dimension=256,
-                                                             index_type=IndexType.FLAT,
-                                                             store_raw_vector=False))
+    def test_create_table(self, connect):
+        table_name_not_exists = 'not_exists'
+        res0 = connect.create_table({'table_name': table_name_not_exists,
+                                     'dimension': 256,
+                                     'index_type': IndexType.FLAT,
+                                     'store_raw_vector': False})
         assert res0.OK()
+
         with pytest.raises(ParamError):
-            res1 = self.milvus.create_table(Prepare.table_schema(table_name=self.table_name_exists,
-                                                             dimension=0,
-                                                             index_type=IndexType.FLAT))
+            res1 = connect.create_table({'table_name': table_name_not_exists,
+                                         'dimension': 0,
+                                         'index_type': IndexType.FLAT})
             assert not res1.OK()
 
-    def test_has_table(self):
-        res = self.milvus.has_table(self.table_name_exists)
+    def test_has_table(self, connect, table):
+        res = connect.has_table(table)
         assert res
 
-        res = self.milvus.has_table(self.table_name_not_exists)
+        res = connect.has_table(table + '_')
         assert not res
 
-    def test_describe_table(self):
-        res, table = self.milvus.describe_table(self.table_name_exists)
+    def test_describe_table(self, connect, table):
+        res, t = connect.describe_table(table)
         assert res.OK()
-        assert table.table_name == self.table_name_exists
+        assert t.table_name == table
 
-        res, table = self.milvus.describe_table('table_not_exist')
+        res, t = connect.describe_table('table_not_exist')
         assert not res.OK()
-        assert not table
+        assert not t
 
-    def test_show_tables(self):
-        status, tables = self.milvus.show_tables()
+    def test_show_tables(self, connect, table):
+        status, tables = connect.show_tables()
         assert status.OK()
-        assert isinstance(tables, list)
+        assert tables[-1] == table
 
-    def test_add_vectors(self):
+    def add_vectors(self):
         vectors = Prepare.records([[random.random()for _ in range(256)] for _ in range(20)])
         status, ids = self.milvus.add_vectors(table_name=self.table_name_exists, records=vectors)
         assert status.OK()
@@ -75,11 +105,11 @@ class TestFromServer:
     #     assert sta.OK()
     #     assert isinstance(results, (TopKQueryResult, list))
 
-    def test_row_counts(self):
+    def test_row_counts(self, connect, table):
 
-        sta, result = self.milvus.get_table_row_count(self.table_name_exists)
+        sta, result = connect.get_table_row_count(table)
         assert sta.OK()
         assert isinstance(result, int)
 
-        sta, result = self.milvus.get_table_row_count('fake_name')
+        sta, result = connect.get_table_row_count('fake_name')
         assert not sta.OK()

@@ -1,14 +1,15 @@
 import inspect
 import logging
 from functools import wraps
+from contextlib import contextmanager
 from celery.exceptions import ChordError
 from milvus import Milvus, Prepare, IndexType, Status
 from milvus.thrift.ttypes import (TopKQueryResult,
                                   QueryResult,
                                   Exception as ThriftException)
-from query_tasks_worker.exceptions import TableNotFoundException
+#from query_tasks_worker.exceptions import TableNotFoundException
 
-import workflow
+#import workflow
 import settings
 LOGGER = logging.getLogger('proxy_server')
 CONNECT_URI = settings.THRIFTCLIENT_TRANSPORT
@@ -19,20 +20,61 @@ class ConnectionHandler:
         self.uri = uri
         self._retry_times = 0
         self._normal_times = 0
-        self.thrift_client = None
+        self.thrift_client = Milvus()
         self.err_handlers = {}
         self.default_error_handler = None
 
+    @contextmanager
+    def connect_context(self):
+        while self.can_retry:
+            try:
+
+                self.thrift_client.connect(uri=self.uri)
+
+            except Exception as e:
+                handler = self.err_handlers.get(e.__class__, None)
+                if handler:
+                    handler(e)
+                else:
+                    raise e
+        if not self.can_retry:
+            sys.exit(1)
+
+        yield
+
+        self.thrift_client.disconnect()
+
+    def error_connector(self, func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                handler = self.err_handlers.get(e.__class__, None)
+                if handler:
+                    handler(e)
+                else:
+                    raise e
+                LOGGER.error(e)
+        return inner
+
+    def connect(self, func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            with self.connect_context():
+            #    while self.can_retry:
+                return func(*args, **kwargs)
+
+        return inner
+
+
     @property
     def client(self):
-        self.thrift_client = Milvus()
-        self.thrift_client.connect(uri=self.uri)
         return self.thrift_client
 
     def reconnect(self, uri=None):
         self.uri = uri if uri else self.uri
-        self.thrift_client = None
-
+        self.thrift_client = Milvus()
 
     @property
     def can_retry(self):
@@ -40,22 +82,6 @@ class ConnectionHandler:
             self._retry_times = self._retry_times - 1 if self._retry_times > 0 else 0
             self._normal_times -= settings.THRIFTCLIENT_NORMAL_TIME
         return self._retry_times <= settings.THRIFTCLIENT_RETRY_TIME
-
-    def retry(self, f):
-        @wraps(f)
-        def wrappers(*args, **kwargs):
-            while self.can_retry:
-                try:
-                    return f(*args, **kwargs)
-
-                except Exception as e:
-                    handler = self.err_handlers.get(e.__class__, None)
-                    if handler:
-                        handler(e)
-                    else:
-                        raise e
-                    LOGGER.error(e)
-        return wrappers
 
     def err_handler(self, exception):
         if inspect.isclass(exception) and issubclass(exception, Exception):
@@ -68,7 +94,7 @@ class ConnectionHandler:
             return exception
 
 
-connect = ConnectionHandler(uri=CONNECT_URI)
+api = ConnectionHandler(uri=CONNECT_URI)
 
 
 class MilvusHandler:
@@ -79,12 +105,10 @@ class MilvusHandler:
 
     @property
     def client(self):
-        # global connect
-
-        self.thrift_client = connect.client
+        self.thrift_client = api.client
         return self.thrift_client
 
-    @connect.retry
+    @api.connect
     def Ping(self, args):
         LOGGER.info('Ping {}'.format(args))
         status, ans = self.client.server_status(args)
@@ -93,21 +117,30 @@ class MilvusHandler:
         if status.OK():
             return ans
 
-    @connect.retry
+    @api.connect
     def CreateTable(self, param):
-        LOGGER.info('CreateTable: {}'.format(param))
+        LOGGER.info('CreateTable: {}'.format(param.table_name))
         status = self.client.create_table(param)
         if not status.OK():
             raise ThriftException(code=status.code, reason=status.message)
         return status
 
-    @connect.retry
+    @api.connect
     def HasTable(self, table_name):
         LOGGER.info('If {} exsits...'.format(table_name))
         has_table = self.client.has_table(table_name)
+
         return has_table
 
-    @connect.retry
+    @api.connect
+    def BuildIndex(self, table_name):
+        LOGGER.info('BuildIndex: {}'.format(table_name))
+        status = self.client.build_index(table_name)
+        if not status.OK():
+            raise ThriftException(code=status.code, reason=status.message)
+        return
+
+    @api.connect
     def DeleteTable(self, table_name):
         LOGGER.info('DeleteTalbe: {}'.format(table_name))
         status = self.client.delete_table(table_name)
@@ -115,7 +148,7 @@ class MilvusHandler:
             raise ThriftException(code=status.code, reason=status.message)
         return table_name
 
-    @connect.retry
+    @api.connect
     def AddVector(self, table_name, record_array):
         LOGGER.info('AddVectors to: {}'.format(table_name))
         status, ids = self.client.add_vectors(table_name, record_array)
@@ -123,6 +156,7 @@ class MilvusHandler:
             raise ThriftException(code=status.code, reason=status.message)
         return ids
 
+    @api.error_connector
     def SearchVector(self, table_name, query_record_array, query_range_array, topk):
         try:
             async_result = workflow.query_vectors_1_n_1_workflow(table_name,
@@ -157,7 +191,7 @@ class MilvusHandler:
 
         return out
 
-    @connect.retry
+    @api.error_connector
     def SearchVectorInFiles(self, table_name, file_id_array, query_record_array, query_range_array, topk):
         LOGGER.info('Searching Vectors in files...')
         res = search_vector_in_files.delay(table_name=table_name,
@@ -175,7 +209,7 @@ class MilvusHandler:
                                             for qr in top_k_query_results])
         return res
 
-    @connect.retry
+    @api.connect
     def DescribeTable(self, table_name):
         LOGGER.info('Describing table: {}'.format(table_name))
         status, table = self.client.describe_table(table_name)
@@ -183,7 +217,7 @@ class MilvusHandler:
             raise ThriftException(code=status.code, reason=status.message)
         return table
 
-    @connect.retry
+    @api.connect
     def GetTableRowCount(self, table_name):
         LOGGER.info('GetTableRowCount: {}'.format(table_name))
         status, count = self.client.get_table_row_count(table_name)
@@ -191,7 +225,7 @@ class MilvusHandler:
             raise ThriftException(code=status.code, reason=status.message)
         return count
 
-    @connect.retry
+    @api.connect
     def ShowTables(self):
         LOGGER.info('ShowTables ...')
         status, tables = self.client.show_tables()
