@@ -3,9 +3,9 @@ import sys
 import settings
 import logging
 
-from MilvusHandler import api
 from milvus.client.Exceptions import *
 from MilvusHandler import (ThriftException,)
+from proxy_server import server, api
 
 RECONNECT_URI = settings.THRIFTCLIENT_TRANSPORT
 
@@ -26,7 +26,7 @@ def NotConnectErrorHandler(e):
         LOGGER.warning('Reconnecting .. {}'.format(api._retry_times))
         api.reconnect(RECONNECT_URI)
     else:
-        sys.exit(1)
+        server.stop_and_exit()
 
 
 @api.err_handler(socket.timeout)
