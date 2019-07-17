@@ -7,8 +7,8 @@ from milvus.thrift.ttypes import (
         Exception as ThriftException)
 
 from celery.exceptions import ChordError
-#from query_tasks_worker.exceptions import TableNotFoundException
-#import workflow
+from query_tasks_worker.exceptions import TableNotFoundException
+import workflow
 
 from proxy_server import api
 
