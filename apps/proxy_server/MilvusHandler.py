@@ -56,7 +56,7 @@ class MilvusHandler:
         status = self.client.build_index(table_name)
         if not status.OK():
             raise ThriftException(code=status.code, reason=status.message)
-        return
+        return table_name
 
     @api.connect
     def DeleteTable(self, table_name):
@@ -95,7 +95,7 @@ class MilvusHandler:
             submsg = message[7:-1]
             infos = [s.strip() for s in submsg.split(',')]
             infos = [info.split('=')[1] for info in infos]
-            raise ThriftExeception(code=int(infos[0]), reason=infos[1])
+            raise ThriftException(code=int(infos[0]), reason=infos[1])
         except TableNotFoundException as exc:
             raise ThriftException(code=exc.code, reason=exc.message)
         except Exception as exc:
