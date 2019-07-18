@@ -12,6 +12,7 @@ from common.factories import TopKQueryResultFactory
 from milvus_celery import settings as celery_settings
 from . import redis_client, settings
 from .models import Table
+from .lb import simple_router
 from milvus_celery.operations import SDKClient
 
 from .exceptions import TableNotFoundException
@@ -55,8 +56,16 @@ def get_queryable_files(table_id, date_range=None):
 
     routing = {}
     servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)
-    ring = HashRing(servers)
     logger.debug('Avaialble servers: {}'.format(servers))
+
+    # mapped = simple_router(servers, [str(f.id) for f in files])
+    # for server, ids in mapped.items():
+    #     routing[server] = {
+    #             'table_id': table_id,
+    #             'file_ids': ids
+    #             }
+
+    ring = HashRing(servers)
     for f in files:
         queue = ring.get_node(str(f.id))
         sub = routing.get(queue, None)
