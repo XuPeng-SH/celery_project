@@ -1,8 +1,10 @@
+import struct
 import logging
 
 from milvus import Milvus, IndexType, Status
 from milvus.thrift.ttypes import (
         TopKQueryResult,
+        TopKQueryBinResult,
         QueryResult,
         Exception as ThriftException)
 
@@ -106,6 +108,48 @@ class MilvusHandler:
             inner = [QueryResult(id=each_result.id, distance=each_result.distance)
                     for each_result in each_request_topk]
             out.append(TopKQueryResult(inner))
+
+        return out
+
+    @api.error_collector
+    def SearchVector2(self, table_name, query_record_array, query_range_array, topk):
+        try:
+            async_result = workflow.query_vectors_1_n_1_workflow(table_name,
+                                                                 query_record_array,
+                                                                 topk,
+                                                                 query_range_array)
+        except TableNotFoundException as exc:
+            raise ThriftException(code=exc.code, reason=exc.message)
+
+        try:
+            result = async_result.get(propagate=True, follow_parents=True)
+        except ChordError as exc:
+            message = str(exc)
+            start = message.index('Status')
+            end = message[start:].index(')')
+            message = message[start:start+end]
+            LOGGER.error(message)
+            submsg = message[7:-1]
+            infos = [s.strip() for s in submsg.split(',')]
+            infos = [info.split('=')[1] for info in infos]
+            raise ThriftException(code=int(infos[0]), reason=infos[1])
+        except TableNotFoundException as exc:
+            raise ThriftException(code=exc.code, reason=exc.message)
+        except Exception as exc:
+            LOGGER.error(exc)
+
+        LOGGER.debug(result)
+
+        out = []
+        for each_request_topk in result:
+            id_array, distance_array = [], []
+            for each_result in each_request_topk:
+                id_array.append(each_result.id)
+                distance_array.append(each_result.distance)
+            bin_result = TopKQueryBinResult(struct.pack(str(len(id_array))+'l', *id_array),
+                    struct.pack(str(len(distance_array))+'d', *distance_array))
+
+            out.append(bin_result)
 
         return out
 
