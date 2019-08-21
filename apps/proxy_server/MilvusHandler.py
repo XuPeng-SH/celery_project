@@ -1,5 +1,6 @@
 import struct
 import logging
+import time
 
 from milvus import Milvus, IndexType, Status
 from milvus.thrift.ttypes import (
@@ -113,6 +114,8 @@ class MilvusHandler:
 
     @api.error_collector
     def SearchVector2(self, table_name, query_record_array, query_range_array, topk):
+        LOGGER.info('SearchVector2: {}'.format(table_name))
+        start = time.time()
         try:
             async_result = workflow.query_vectors_1_n_1_workflow(table_name,
                                                                  query_record_array,
@@ -138,8 +141,9 @@ class MilvusHandler:
         except Exception as exc:
             LOGGER.error(exc)
 
-        LOGGER.debug(result)
-
+        # LOGGER.debug(result)
+        LOGGER.info('SearchVector takes: {}'.format(time.time()-start))
+        start = time.time()
         out = []
         for each_request_topk in result:
             id_array, distance_array = [], []
@@ -150,6 +154,7 @@ class MilvusHandler:
                     struct.pack(str(len(distance_array))+'d', *distance_array))
 
             out.append(bin_result)
+        LOGGER.info('Prepare SearchResults takes: {}'.format(time.time()-start))
 
         return out
 
