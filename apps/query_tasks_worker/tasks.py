@@ -9,6 +9,7 @@ from milvus import Milvus
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 from common.factories import TopKQueryResultFactory
 
+from milvus_celery.datatypes import SearchBatchResults
 from milvus_celery import settings as celery_settings
 from . import redis_client, settings
 from .models import Table
@@ -123,6 +124,8 @@ def merge_query_results(files_n_topk_results, topK):
     request_results = defaultdict(list)
 
     for files_collection in files_n_topk_results:
+        files_collection = SearchBatchResults.deep_loads(files_collection)
+        logger.error(files_collection)
         for request_pos, each_request_results in enumerate(files_collection):
             request_results[request_pos].extend(each_request_results)
             request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.distance)[:topK]
@@ -131,7 +134,7 @@ def merge_query_results(files_n_topk_results, topK):
     results = [value[1] for value in results]
     logger.debug('merge_results: {}'.format(results))
 
-    return results
+    return SearchBatchResults(results)
 
 
 @celery_app.task(bind=True)

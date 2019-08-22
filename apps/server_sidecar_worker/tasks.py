@@ -7,6 +7,7 @@ from milvus.client.Abstract import TopKQueryResult, QueryResult
 from milvus_celery.operations import SDKClient
 
 from milvus_celery import settings
+from milvus_celery.datatypes import SearchBatchResults
 from .app import celery_app
 from common.factories import TopKQueryResultFactory
 
@@ -23,8 +24,7 @@ def query_files(routing, vectors, topK):
                 query_records=vectors, topK=topK)
         end = time.time()
         logger.info('search_vectors_in_files takes: {}'.format(end - start))
-        # for pos, result in enumerate(results):
-        #     logger.debug('result-{}: {}'.format(pos, result))
-        # logger.debug(len(results))
 
-    return results
+    ret = SearchBatchResults(results)
+
+    return ret

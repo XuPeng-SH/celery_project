@@ -141,22 +141,10 @@ class MilvusHandler:
         except Exception as exc:
             LOGGER.error(exc)
 
-        # LOGGER.debug(result)
         LOGGER.info('SearchVector takes: {}'.format(time.time()-start))
-        start = time.time()
-        out = []
-        for each_request_topk in result:
-            id_array, distance_array = [], []
-            for each_result in each_request_topk:
-                id_array.append(each_result.id)
-                distance_array.append(each_result.distance)
-            bin_result = TopKQueryBinResult(struct.pack(str(len(id_array))+'l', *id_array),
-                    struct.pack(str(len(distance_array))+'d', *distance_array))
 
-            out.append(bin_result)
-        LOGGER.info('Prepare SearchResults takes: {}'.format(time.time()-start))
+        return result
 
-        return out
 
     @api.error_collector
     def SearchVectorInFiles(self, table_name, file_id_array, query_record_array, query_range_array, topk):

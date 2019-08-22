@@ -4,7 +4,7 @@ import datetime
 import logging
 from milvus_celery.datatypes import (QueryResponse, QueryResultHelper,
         TopKQueryResultHelper, QueryResult, TopKQueryResult, RowRecord,
-        RowRecordHelper)
+        RowRecordHelper, SearchBatchResults, TopKQueryBinResultHelper, TopKQueryBinResult)
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,10 @@ class CustomEncoderMixin:
             return obj.strftime('%s')
         if isinstance(obj, RowRecord):
             return RowRecordHelper(obj).to_dict()
+        if isinstance(obj, SearchBatchResults):
+            return obj.to_dict()
+        if isinstance(obj, TopKQueryBinResult):
+            return TopKQueryBinResultHelper(obj).to_dict()
 
         return None;
 
@@ -52,6 +56,12 @@ def DecoderHook(obj):
 
     if obj['__type__'] == RowRecordHelper.__type__:
         return RowRecordHelper.from_dict(obj)
+
+    if obj['__type__'] == TopKQueryBinResultHelper.__type__:
+        return TopKQueryBinResultHelper.from_dict(obj)
+
+    if obj['__type__'] == SearchBatchResults.__type__:
+        return SearchBatchResults.from_dict(obj)
 
 def JsonDumps(obj):
     return json.dumps(obj, cls=JsonCustomEncoder)
