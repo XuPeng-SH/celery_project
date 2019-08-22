@@ -1,4 +1,4 @@
-FROM registry.zilliz.com/milvus/celery:v0.0.2
+FROM registry.zilliz.com/milvus/celery:v0.0.3
 RUN apt update; apt install -y vim; apt install -y telnet
 WORKDIR /source
 ADD ./requirements_apps.txt ./

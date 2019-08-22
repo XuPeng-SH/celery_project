@@ -1,4 +1,5 @@
 import json
+import msgpack
 import datetime
 import logging
 from milvus_celery.datatypes import (QueryResponse, QueryResultHelper,
@@ -7,8 +8,8 @@ from milvus_celery.datatypes import (QueryResponse, QueryResultHelper,
 
 logger = logging.getLogger(__name__)
 
-class JsonCustomEncoder(json.JSONEncoder):
-    def default(self, obj):
+class CustomEncoderMixin:
+    def _default(self, obj):
         if isinstance(obj, QueryResponse):
             return obj.to_dict()
         if isinstance(obj, QueryResult):
@@ -22,9 +23,21 @@ class JsonCustomEncoder(json.JSONEncoder):
         if isinstance(obj, RowRecord):
             return RowRecordHelper(obj).to_dict()
 
-        return json.JSONEncoder.default(self, obj)
+        return None;
 
-def JsonDecoderHook(obj):
+class JsonCustomEncoder(json.JSONDecoder, CustomEncoderMixin):
+    def default(self, obj):
+        processed = self._default(obj)
+        processed = processed if processed else json.JSONEncoder.default(self, obj)
+        return processed
+
+class MsgPackCustomEncoder(CustomEncoderMixin):
+    def __call__(self, obj):
+        processed = self._default(obj)
+        processed = processed if processed else obj
+        return processed
+
+def DecoderHook(obj):
     if '__type__' not in obj:
         return obj
 
@@ -46,9 +59,17 @@ def JsonDumps(obj):
 def JsonLoads(obj):
     if isinstance(obj, bytes):
         obj = obj.decode()
-    return json.loads(obj, object_hook=JsonDecoderHook)
+    return json.loads(obj, object_hook=DecoderHook)
+
+msgpack_encoder = MsgPackCustomEncoder()
+
+def MsgPackDumps(obj):
+    return msgpack.packb(obj, default=msgpack_encoder, use_bin_type=True)
+
+def MsgPackLoads(obj):
+    return msgpack.unpackb(obj, object_hook=DecoderHook, raw=False)
 
 from kombu.serialization import register
-register('customjson', JsonDumps, JsonLoads,
-        content_type='application/x-customjson',
+register('custommsgpack', MsgPackDumps, MsgPackLoads,
+        content_type='application/x-custommsgpack',
         content_encoding='utf-8')
