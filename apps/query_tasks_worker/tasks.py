@@ -1,3 +1,4 @@
+import time
 from random import randint
 from functools import reduce
 import numpy as np
@@ -42,6 +43,7 @@ def get_table(table_id):
 
 @celery_app.task
 def get_queryable_files(table_id, date_range=None):
+    logger.info('Start get_queryable_files @{}'.format(time.time()))
     try_time = 3
     table = None
     while try_time > 0:
@@ -116,6 +118,7 @@ def reduce_n_request_files_results(topk_results):
 
 @celery_app.task
 def merge_query_results(files_n_topk_results, topK):
+    logger.info('Start merge_query_results @{}'.format(time.time()))
     if not files_n_topk_results or topK <= 0:
         return []
 
@@ -125,7 +128,6 @@ def merge_query_results(files_n_topk_results, topK):
 
     for files_collection in files_n_topk_results:
         files_collection = SearchBatchResults.deep_loads(files_collection)
-        logger.error(files_collection)
         for request_pos, each_request_results in enumerate(files_collection):
             request_results[request_pos].extend(each_request_results)
             request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.distance)[:topK]

@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task
 def query_files(routing, vectors, topK):
+    logger.info('Start Query @{}'.format(time.time()))
     logger.debug('Querying routing {} nq={} topK={}'.format(routing, len(vectors), topK))
     client = SDKClient(host=settings.MILVUS_SERVER_HOST, port=settings.MILVUS_SERVER_PORT)
     with client:

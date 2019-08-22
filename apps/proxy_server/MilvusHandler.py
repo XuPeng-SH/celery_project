@@ -140,8 +140,9 @@ class MilvusHandler:
             raise ThriftException(code=exc.code, reason=exc.message)
         except Exception as exc:
             LOGGER.error(exc)
-
-        LOGGER.info('SearchVector takes: {}'.format(time.time()-start))
+        now = time.time()
+        LOGGER.info('SearchVector Ends @{}'.format(now))
+        LOGGER.info('SearchVector takes: {}'.format(now-start))
 
         return result
 
