@@ -26,6 +26,6 @@ def query_files(routing, vectors, topK):
         end = time.time()
         logger.info('search_vectors_in_files takes: {}'.format(end - start))
 
-    ret = SearchBatchResults(results)
+    ret = SearchBatchResults(results, True)
 
     return ret

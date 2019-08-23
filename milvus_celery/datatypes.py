@@ -115,20 +115,24 @@ class RowRecordHelper:
 class SearchBatchResults:
     __type__ = '__SearchBatchResults__'
 
-    def __init__(self, data):
+    def __init__(self, data, binary=False):
         self.data = data
+        self.binary = binary
 
     def to_dict(self):
         out = []
-        for each_request_topk in self.data:
-            id_array, distance_array = [], []
-            for each_result in each_request_topk:
-                id_array.append(each_result.id)
-                distance_array.append(each_result.distance)
-            bin_result = TopKQueryBinResult(struct.pack(str(len(id_array))+'l', *id_array),
-                    struct.pack(str(len(distance_array))+'d', *distance_array))
+        if self.binary:
+            out = self.data
+        else:
+            for each_request_topk in self.data:
+                id_array, distance_array = [], []
+                for each_result in each_request_topk:
+                    id_array.append(each_result.id)
+                    distance_array.append(each_result.distance)
+                bin_result = TopKQueryBinResult(struct.pack(str(len(id_array))+'l', *id_array),
+                        struct.pack(str(len(distance_array))+'d', *distance_array))
 
-            out.append(bin_result)
+                out.append(bin_result)
         data = {
             '__type__': self.__class__.__type__,
             'data': out
