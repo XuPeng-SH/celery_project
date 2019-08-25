@@ -1,4 +1,5 @@
 import json
+import time
 import msgpack
 import datetime
 import logging
@@ -74,10 +75,16 @@ def JsonLoads(obj):
 msgpack_encoder = MsgPackCustomEncoder()
 
 def MsgPackDumps(obj):
-    return msgpack.packb(obj, default=msgpack_encoder, use_bin_type=True)
+    now = time.time()
+    ret = msgpack.packb(obj, default=msgpack_encoder, use_bin_type=True)
+    logger.info('MsgPackDums class takes {}'.format(time.time() - now))
+    return ret
 
 def MsgPackLoads(obj):
-    return msgpack.unpackb(obj, object_hook=DecoderHook, raw=False)
+    now = time.time()
+    ret =  msgpack.unpackb(obj, object_hook=DecoderHook, raw=False)
+    logger.info('MsgPackLoads takes {}'.format(time.time() - now))
+    return ret
 
 from kombu.serialization import register
 register('custommsgpack', MsgPackDumps, MsgPackLoads,

@@ -1,3 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import nest_asyncio
+nest_asyncio.apply()
+
 import time
 from random import randint
 from functools import reduce
@@ -61,23 +66,23 @@ def get_queryable_files(table_id, date_range=None):
     servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)
     logger.debug('Avaialble servers: {}'.format(servers))
 
-    # mapped = simple_router(servers, [str(f.id) for f in files])
-    # for server, ids in mapped.items():
-    #     routing[server] = {
-    #             'table_id': table_id,
-    #             'file_ids': ids
-    #             }
-
-    ring = HashRing(servers)
-    for f in files:
-        queue = ring.get_node(str(f.id))
-        sub = routing.get(queue, None)
-        if not sub:
-            routing[queue] = {
+    mapped = simple_router(servers, [str(f.id) for f in files])
+    for server, ids in mapped.items():
+        routing[server] = {
                 'table_id': table_id,
-                'file_ids': []
-            }
-        routing[queue]['file_ids'].append(str(f.id))
+                'file_ids': ids
+                }
+
+    # ring = HashRing(servers)
+    # for f in files:
+    #     queue = ring.get_node(str(f.id))
+    #     sub = routing.get(queue, None)
+    #     if not sub:
+    #         routing[queue] = {
+    #             'table_id': table_id,
+    #             'file_ids': []
+    #         }
+    #     routing[queue]['file_ids'].append(str(f.id))
 
     return routing
 
@@ -126,15 +131,43 @@ def merge_query_results(files_n_topk_results, topK):
 
     request_results = defaultdict(list)
 
-    for files_collection in files_n_topk_results:
-        files_collection = SearchBatchResults.deep_loads(files_collection)
+    '''
+    pool = ThreadPoolExecutor(4)
+
+    def load_func(results):
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        files_collection = SearchBatchResults.deep_loads(results)
         for request_pos, each_request_results in enumerate(files_collection):
             request_results[request_pos].extend(each_request_results)
             request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.distance)[:topK]
 
+    async_r = []
+
+    for each_results in files_n_topk_results:
+        r = pool.submit(load_func, each_results)
+        async_r.append(r)
+
+    for r in async_r:
+        r.result()
+
+    '''
+    load_time = 0
+    calc_time = 0
+    for files_collection in files_n_topk_results:
+        p1 = time.time()
+        files_collection = SearchBatchResults.deep_loads(files_collection)
+        p2 = time.time()
+        load_time += p2 - p1
+        for request_pos, each_request_results in enumerate(files_collection):
+            request_results[request_pos].extend(each_request_results)
+            request_results[request_pos] = sorted(request_results[request_pos], key=lambda x: x.distance)[:topK]
+        calc_time += time.time() - p2
+    logger.info("load_time={}".format(load_time))
+    logger.info("calc_time={}".format(calc_time))
+
     results = sorted(request_results.items())
     results = [value[1] for value in results]
-    logger.debug('merge_results: {}'.format(results))
 
     return SearchBatchResults(results)
 

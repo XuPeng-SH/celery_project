@@ -3,3 +3,4 @@ flask-restplus==0.12.1
 Flask==1.0.3
 Flask-SQLAlchemy==2.4.0
 flower==0.9.3
+nest-asyncio==1.1.0

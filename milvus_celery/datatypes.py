@@ -1,7 +1,9 @@
 import struct
+import asyncio
 from milvus.thrift.ttypes import RowRecord
 from milvus.client.Abstract import TopKQueryResult, QueryResult
 from milvus.thrift.ttypes import TopKQueryBinResult
+
 
 class QueryResponse:
     __type__ = '__QueryResponse__'
@@ -147,6 +149,9 @@ class SearchBatchResults:
     def deep_loads(cls, d):
         res = TopKQueryResult()
         for topks in d:
+            res.append(None)
+
+        async def func(pos, topks):
             ids = topks.id_array
             distances = topks.distance_array
             count = len(ids) // 8
@@ -157,5 +162,15 @@ class SearchBatchResults:
 
             qr = [QueryResult(ids[i], distances[i]) for i in range(count)]
 
-            res.append(qr)
+            res[pos] = qr
+
+        rs = []
+        for pos, topks in enumerate(d):
+            r = asyncio.ensure_future(func(pos, topks))
+            rs.append(r)
+
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.wait(rs))
+        # await asyncio.gather(*rs)
+
         return res
