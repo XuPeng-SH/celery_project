@@ -46,7 +46,8 @@ def get_table(table_id):
     return table
 
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 3})
 def get_queryable_files(table_id, date_range=None):
     logger.info('Start get_queryable_files @{}'.format(time.time()))
     try_time = 3
@@ -66,27 +67,28 @@ def get_queryable_files(table_id, date_range=None):
     servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)
     logger.debug('Avaialble servers: {}'.format(servers))
 
-    mapped = simple_router(servers, [str(f.id) for f in files])
-    for server, ids in mapped.items():
-        routing[server] = {
-                'table_id': table_id,
-                'file_ids': ids
-                }
-
-    # ring = HashRing(servers)
-    # for f in files:
-    #     queue = ring.get_node(str(f.id))
-    #     sub = routing.get(queue, None)
-    #     if not sub:
-    #         routing[queue] = {
+    # mapped = simple_router(servers, [str(f.id) for f in files])
+    # for server, ids in mapped.items():
+    #     routing[server] = {
     #             'table_id': table_id,
-    #             'file_ids': []
-    #         }
-    #     routing[queue]['file_ids'].append(str(f.id))
+    #             'file_ids': ids
+    #             }
+
+    ring = HashRing(servers)
+    for f in files:
+        queue = ring.get_node(str(f.id))
+        sub = routing.get(queue, None)
+        if not sub:
+            routing[queue] = {
+                'table_id': table_id,
+                'file_ids': []
+            }
+        routing[queue]['file_ids'].append(str(f.id))
 
     return routing
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 3})
 def query_files(routing, vectors, topK):
     logger.debug('Querying routing {}'.format(routing))
 
@@ -121,13 +123,12 @@ def reduce_one_request_files_results(files_topk_results, topK):
 def reduce_n_request_files_results(topk_results):
     return topk_results
 
-@celery_app.task
+@celery_app.task(autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 3})
 def merge_query_results(files_n_topk_results, topK):
     logger.info('Start merge_query_results @{}'.format(time.time()))
     if not files_n_topk_results or topK <= 0:
         return []
-
-    logger.debug('files_n_topk_results: {}'.format(files_n_topk_results))
 
     request_results = defaultdict(list)
 
@@ -172,7 +173,8 @@ def merge_query_results(files_n_topk_results, topK):
     return SearchBatchResults(results)
 
 
-@celery_app.task(bind=True)
+@celery_app.task(bind=True, autoretry_for=(Exception,),
+          retry_kwargs={'max_retries': 3})
 def schedule_query(self, source_data, mapper, reducer=None):
     mapper = maybe_signature(mapper, self.app)
     reducer = maybe_signature(reducer, self.app) if reducer else None
