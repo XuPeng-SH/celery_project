@@ -24,6 +24,9 @@ THRIFTSERVER_FRAMED = env.bool('THRIFTSERVER_FRAMED')
 
 QUEUES = env.str('QUEUES')
 
+THREAD_POOL_SIZE = env.int('THREAD_POOL_SIZE', 8)
+
+ALL_WORKFLOW = env.bool('ALL_WORKFLOW', False)
 
 def config_log():
     COLORS = {

@@ -46,11 +46,10 @@ def get_table(table_id):
     return table
 
 
-@celery_app.task(autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 3})
+@celery_app.task
 def get_queryable_files(table_id, date_range=None):
     logger.info('Start get_queryable_files @{}'.format(time.time()))
-    try_time = 3
+    try_time = 1
     table = None
     while try_time > 0:
         try_time -= 1
@@ -88,7 +87,7 @@ def get_queryable_files(table_id, date_range=None):
     return routing
 
 @celery_app.task(autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 3})
+          retry_kwargs={'max_retries': 3, 'countdown': 1})
 def query_files(routing, vectors, topK):
     logger.debug('Querying routing {}'.format(routing))
 
@@ -174,7 +173,7 @@ def merge_query_results(files_n_topk_results, topK):
 
 
 @celery_app.task(bind=True, autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 3})
+          retry_kwargs={'max_retries': 3, 'countdown': 1})
 def schedule_query(self, source_data, mapper, reducer=None):
     mapper = maybe_signature(mapper, self.app)
     reducer = maybe_signature(reducer, self.app) if reducer else None

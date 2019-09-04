@@ -15,7 +15,7 @@ from common.factories import TopKQueryResultFactory
 logger = logging.getLogger(__name__)
 
 @celery_app.task(autoretry_for=(Exception,),
-          retry_kwargs={'max_retries': 2})
+          retry_kwargs={'max_retries': 1, 'countdown': 1})
 def query_files(routing, vectors, topK):
     logger.info('Start Query @{}'.format(time.time()))
     logger.debug('Querying routing {} nq={} topK={}'.format(routing, len(vectors), topK))

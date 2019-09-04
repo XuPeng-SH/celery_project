@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 
 from celery.signals import (worker_ready, worker_shutdown, worker_init)
 from .app import redis_client
@@ -14,7 +15,9 @@ def ready_handler(sender=None, **kwargs):
     logger.info('MonitorKey: {}'.format(servers_monitor_key))
     logger.info('Worker {} is ready'.format(sender.hostname))
     queue = sender.hostname.split('@')[1]
+    host = socket.gethostbyname(socket.gethostname())
     redis_client.client.sadd(servers_monitor_key, queue)
+    redis_client.client.set(queue, host)
 
 @worker_shutdown.connect
 def shutdown_handler(sender=None, **kwargs):

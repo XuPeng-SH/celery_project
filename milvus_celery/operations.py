@@ -48,10 +48,10 @@ class SDKClient(object):
 
         return results
 
-    def search_vectors_in_files(self, table_id, file_ids, query_records, topK, query_ranges=None):
+    def search_vectors_in_files(self, table_id, file_ids, query_records, topK, query_ranges=None, raw=True):
         try:
             status, results = self.client.search_vectors_in_files(
-                    table_id, file_ids, query_records, topK, query_ranges, raw=True)
+                    table_id, file_ids, query_records, topK, query_ranges, raw=raw)
         except Exception as exc:
             raise SDKClientSearchVectorException(str(exc))
 
