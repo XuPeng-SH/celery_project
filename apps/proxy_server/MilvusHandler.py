@@ -124,6 +124,8 @@ class MilvusHandler:
         except TableNotFoundException as exc:
             raise ThriftException(code=exc.code, reason=exc.message)
 
+        result = []
+
         try:
             result = async_result.get(propagate=True, follow_parents=True)
         except ChordError as exc:
@@ -140,6 +142,7 @@ class MilvusHandler:
             raise ThriftException(code=exc.code, reason=exc.message)
         except Exception as exc:
             LOGGER.error(exc)
+            result = async_result.get(propagate=True, follow_parents=True)
         now = time.time()
         LOGGER.info('SearchVector Ends @{}'.format(now))
         LOGGER.info('SearchVector takes: {}'.format(now-start))
