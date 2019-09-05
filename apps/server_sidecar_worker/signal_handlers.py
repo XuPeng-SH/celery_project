@@ -4,7 +4,7 @@ import socket
 import time
 
 from milvus_celery.operations import SDKClient
-from celery.signals import (worker_ready, worker_shutdown, worker_init)
+from celery.signals import (worker_ready, worker_shutdown, worker_init, heartbeat_sent)
 from .app import redis_client
 from milvus_celery import settings
 
@@ -12,6 +12,14 @@ logger = logging.getLogger(__name__)
 
 servers_monitor_key = os.environ['SERVERS_MONITOR_KEY']
 assert servers_monitor_key.startswith('monitor:'), 'Monitor key should start with: "monitor:"'
+
+@heartbeat_sent.connect
+def heartbeat_sent_handler(sender=None, **kwargs):
+    logger.info('Handling heartbeat_sent signal')
+    queue = socket.gethostname()
+    host = socket.gethostbyname(socket.gethostname())
+    redis_client.client.sadd(servers_monitor_key, queue)
+    redis_client.client.set(queue, host)
 
 @worker_ready.connect
 def ready_handler(sender=None, **kwargs):
