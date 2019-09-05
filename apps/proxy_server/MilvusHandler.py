@@ -10,6 +10,7 @@ from milvus.thrift.ttypes import (
         Exception as ThriftException)
 
 from celery.exceptions import ChordError
+from milvus_celery.exceptions import SDKClientSearchVectorException
 from query_tasks_worker.exceptions import TableNotFoundException
 import workflow
 
@@ -130,8 +131,10 @@ class MilvusHandler:
             else:
                 result = workflow.query_vectors(table_name, query_record_array, topk, query_range_array)
 
+            return result
+
         try:
-            do_func()
+            result = do_func()
         except ChordError as exc:
             message = str(exc)
             start = message.index('Status')
@@ -142,7 +145,7 @@ class MilvusHandler:
             infos = [s.strip() for s in submsg.split(',')]
             infos = [info.split('=')[1] for info in infos]
             raise ThriftException(code=int(infos[0]), reason=infos[1])
-        except TableNotFoundException as exc:
+        except (TableNotFoundException, SDKClientSearchVectorException) as exc:
             raise ThriftException(code=exc.code, reason=exc.message)
         except Exception as exc:
             LOGGER.error(exc)

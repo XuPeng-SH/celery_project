@@ -64,6 +64,7 @@ def query_vectors_1_n_1_workflow(table_id, vectors, topK, range_array=None):
 
 def query_vectors(table_id, vectors, topK, range_array=None):
     queue = settings.QUEUES
+    range_array = [range_to_date(r) for r in range_array] if range_array else None
     async_result = get_queryable_files.s(table_id, range_array).set(queue=queue).apply_async()
     routing = async_result.get(propagate=True)
     logger.debug(routing)
@@ -72,8 +73,6 @@ def query_vectors(table_id, vectors, topK, range_array=None):
     all_topk_results = []
 
     thread_pool_size = settings.THREAD_POOL_SIZE
-
-    pool = ThreadPoolExecutor(thread_pool_size)
 
     def func(remote_id, query_params, vectors, topK):
         logger.info('Start Query @{}'.format(time.time()))
@@ -95,12 +94,13 @@ def query_vectors(table_id, vectors, topK, range_array=None):
 
         all_topk_results.append(ret)
 
-    for remote_id, params in routing.items():
-        r = pool.submit(func, remote_id, params, vectors, topK)
-        rs.append(r)
+    with ThreadPoolExecutor(max_workers=thread_pool_size) as pool:
+        for remote_id, params in routing.items():
+            r = pool.submit(func, remote_id, params, vectors, topK)
+            rs.append(r)
 
-    for r in rs:
-        r.result()
+        for r in rs:
+            r.result()
 
     results = merge_query_results(all_topk_results, topK)
     return results.to_dict()['data'] if results else results
