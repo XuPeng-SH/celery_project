@@ -93,6 +93,7 @@ def query_vectors(table_id, vectors, topK, range_array=None):
             logger.info('search_vectors_in_files takes: {}'.format(end - start))
 
         all_topk_results.append(ret)
+        return ''
 
     with ThreadPoolExecutor(max_workers=thread_pool_size) as pool:
         for remote_id, params in routing.items():
