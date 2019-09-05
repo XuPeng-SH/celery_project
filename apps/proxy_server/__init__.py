@@ -2,7 +2,7 @@ import settings
 
 from milvus_celery.redis_handler import RedisHandler
 
-redis_client = RedisHandler(host="milvus-redis", db=1)
+redis_client = RedisHandler(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB)
 redis_client.init()
 
 from ConnectionHandler import ConnectionHandler

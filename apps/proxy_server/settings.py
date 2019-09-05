@@ -27,6 +27,9 @@ QUEUES = env.str('QUEUES')
 THREAD_POOL_SIZE = env.int('THREAD_POOL_SIZE', 8)
 
 ALL_WORKFLOW = env.bool('ALL_WORKFLOW', False)
+REDIS_DB = env.int('REDIS_DB', 0)
+REDIS_HOST = env.str('REDIS_HOST', 'localhost')
+REDIS_PORT = env.int('REDIS_PORT', 6379)
 
 def config_log():
     COLORS = {
