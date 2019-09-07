@@ -12,7 +12,7 @@ from query_tasks_worker.tasks import (merge_query_results,
 
 from server_sidecar_worker.tasks import query_files
 import settings
-from proxy_server import redis_client
+from proxy_server import redis_client, founder
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,10 @@ def query_vectors_1_n_1_workflow(table_id, vectors, topK, range_array=None):
 def query_vectors(table_id, vectors, topK, range_array=None):
     queue = settings.QUEUES
     range_array = [range_to_date(r) for r in range_array] if range_array else None
-    async_result = get_queryable_files.s(table_id, range_array).set(queue=queue).apply_async()
+    servers = list(founder.pod_info.keys())
+    logger.error(servers)
+    logger.error(founder.pod_info)
+    async_result = get_queryable_files.s(table_id, servers, range_array).set(queue=queue).apply_async()
     routing = async_result.get(propagate=True)
     logger.debug(routing)
 
@@ -77,11 +80,12 @@ def query_vectors(table_id, vectors, topK, range_array=None):
     def func(remote_id, query_params, vectors, topK):
         logger.info('Start Query @{}'.format(time.time()))
         logger.debug('Querying {} params {} nq={} topK={}'.format(remote_id, query_params, len(vectors), topK))
-        host = redis_client.client.get(remote_id)
+        # host = redis_client.client.get(remote_id)
+        host = founder.pod_info.get(remote_id)
         if not host:
             raise ThriftException(code=1001, reason='Internal Server Error')
 
-        host = str(host, encoding='utf-8')
+        # host = str(host, encoding='utf-8')
         logger.debug('redis host {}'.format(host))
 
         client = SDKClient(host=host)

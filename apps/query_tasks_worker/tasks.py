@@ -47,7 +47,7 @@ def get_table(table_id):
 
 
 @celery_app.task
-def get_queryable_files(table_id, date_range=None):
+def get_queryable_files(table_id, servers, date_range=None):
     logger.info('Start get_queryable_files @{}'.format(time.time()))
     try_time = 1
     table = None
@@ -63,8 +63,8 @@ def get_queryable_files(table_id, date_range=None):
     files = table.files_to_search(date_range)
 
     routing = {}
-    servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)
-    logger.debug('Avaialble servers: {}'.format(servers))
+    # servers = redis_client.smembers(celery_settings.SERVERS_MONITOR_KEY)
+    logger.info('Avaialble servers: {}'.format(servers))
 
     # mapped = simple_router(servers, [str(f.id) for f in files])
     # for server, ids in mapped.items():

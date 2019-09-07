@@ -41,11 +41,28 @@ class K8SEventListener(threading.Thread):
         self.terminate = True
 
     def run(self):
-        w = watch.Watch()
         resource_version = ''
         start_up = True
+        w = watch.Watch()
+        for event in w.stream(self.v1.list_namespaced_event, namespace=self.namespace,
+                field_selector='involvedObject.kind=Pod'):
+            if self.terminate:
+                break
+
+            resource_version = int(event['object'].metadata.resource_version)
+
+            info = dict(
+                    pod=event['object'].involved_object.name,
+                    reason=event['object'].reason,
+                    message=event['object'].message,
+                    start_up=start_up,
+            )
+            # logger.info('Received event: {}'.format(info))
+            self.queue.put(info)
+        '''
         while not self.terminate:
             try:
+                w = watch.Watch()
                 for event in w.stream(self.v1.list_namespaced_event, namespace=self.namespace,
                         field_selector='involvedObject.kind=Pod', _request_timeout=2, resource_version=resource_version):
 
@@ -57,7 +74,7 @@ class K8SEventListener(threading.Thread):
                             message=event['object'].message,
                             start_up=start_up,
                     )
-                    logger.info('Received event: {}'.format(info))
+                    # logger.info('Received event: {}'.format(info))
                     self.queue.put(info)
             except urllib3.exceptions.ReadTimeoutError as err:
                 start_up = False
@@ -66,6 +83,7 @@ class K8SEventListener(threading.Thread):
                 time.sleep(1)
                 start_up = False
                 continue
+        '''
 
 class EventHandler(threading.Thread):
     def __init__(self, mgr, message_queue, namespace, pod_patt, **kwargs):
@@ -81,7 +99,8 @@ class EventHandler(threading.Thread):
         self.terminate = True
 
     def on_drop(self, event, **kwargs):
-        logger.debug('Event Dropped!')
+        pass
+        # logger.debug('Event Dropped!')
 
     def on_pod_started(self, event, **kwargs):
         try_cnt = 3
@@ -113,13 +132,13 @@ class EventHandler(threading.Thread):
         self.mgr.delete_pod(name=event['pod'])
 
     def handle_event(self, event):
-        logger.debug('Handling event: {}'.format(event))
-
         if not event or (event['reason'] not in ('Started', 'Killing')):
             return self.on_drop(event)
 
         if not re.match(self.pod_patt, event['pod']):
             return self.on_drop(event)
+
+        logger.info('Handling event: {}'.format(event))
 
         if event['reason'] == 'Started':
             return self.on_pod_started(event)
@@ -173,6 +192,7 @@ class ServiceFounder(object):
     def stop(self):
         self.listener.stop()
         self.event_handler.stop()
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

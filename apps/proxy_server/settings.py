@@ -31,6 +31,11 @@ REDIS_DB = env.int('REDIS_DB', 0)
 REDIS_HOST = env.str('REDIS_HOST', 'localhost')
 REDIS_PORT = env.int('REDIS_PORT', 6379)
 
+NAMESPACE = env.str('NAMESPACE', 'xp')
+# NAMESPACE = env.str(NAMESPACE, 'default')
+ROSERVER_POD_PATT = env.str('ROSERVER_POD_PATT', '.*-ro-servers-.*')
+IN_CLUSTER = env.bool('IN_CLUSTER', True)
+
 def config_log():
     COLORS = {
         'HEADER': '\033[95m',
