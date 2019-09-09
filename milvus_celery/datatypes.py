@@ -151,7 +151,8 @@ class SearchBatchResults:
         for topks in d:
             res.append(None)
 
-        async def func(pos, topks):
+        def func(pos, topks):
+        # async def func(pos, topks):
             ids = topks.id_array
             distances = topks.distance_array
             count = len(ids) // 8
@@ -164,13 +165,14 @@ class SearchBatchResults:
 
             res[pos] = qr
 
-        rs = []
+        # rs = []
         for pos, topks in enumerate(d):
-            r = asyncio.ensure_future(func(pos, topks))
-            rs.append(r)
+            # r = asyncio.ensure_future(func(pos, topks))
+            # rs.append(r)
+            func(pos, topks)
 
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.wait(rs))
+        # loop = asyncio.get_event_loop()
+        # loop.run_until_complete(asyncio.wait(rs))
         # await asyncio.gather(*rs)
 
         return res
