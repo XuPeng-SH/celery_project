@@ -78,13 +78,9 @@ def query_vectors(table_id, vectors, topK, range_array=None):
     def func(remote_id, query_params, vectors, topK):
         logger.info('Start Query @{}'.format(time.time()))
         logger.debug('Querying {} params {} nq={} topK={}'.format(remote_id, query_params, len(vectors), topK))
-        # host = redis_client.client.get(remote_id)
         host = founder.pod_info.get(remote_id)
         if not host:
             raise ThriftException(code=1001, reason='Internal Server Error')
-
-        # host = str(host, encoding='utf-8')
-        logger.debug('redis host {}'.format(host))
 
         client = SDKClient(host=host)
         with client:
