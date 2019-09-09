@@ -66,8 +66,6 @@ def query_vectors(table_id, vectors, topK, range_array=None):
     queue = settings.QUEUES
     range_array = [range_to_date(r) for r in range_array] if range_array else None
     servers = list(founder.pod_info.keys())
-    logger.error(servers)
-    logger.error(founder.pod_info)
     async_result = get_queryable_files.s(table_id, servers, range_array).set(queue=queue).apply_async()
     routing = async_result.get(propagate=True)
     logger.debug(routing)
