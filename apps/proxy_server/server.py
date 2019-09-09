@@ -7,8 +7,6 @@ from proxy_server import server, founder
 import MilvusHandler, ConnectionHandler, ErrorHandlers, ThriftServer
 
 def main():
-    settings.config_log()
-
     founder.start()
     server.start_thrift_server()
     founder.stop()

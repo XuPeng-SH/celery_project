@@ -31,69 +31,14 @@ REDIS_DB = env.int('REDIS_DB', 0)
 REDIS_HOST = env.str('REDIS_HOST', 'localhost')
 REDIS_PORT = env.int('REDIS_PORT', 6379)
 
-NAMESPACE = env.str('NAMESPACE', 'xp')
-# NAMESPACE = env.str(NAMESPACE, 'default')
+NAMESPACE = env.str("NAMESPACE", 'default')
 ROSERVER_POD_PATT = env.str('ROSERVER_POD_PATT', '.*-ro-servers-.*')
 IN_CLUSTER = env.bool('IN_CLUSTER', True)
 
-def config_log():
-    COLORS = {
-        'HEADER': '\033[95m',
-        'INFO': '\033[92m',
-        'DEBUG': '\033[94m',
-        'WARNING': '\033[93m',
-        'ERROR': '\033[95m',
-        'CRITICAL': '\033[91m',
-        'ENDC': '\033[0m',
-    }
+LOG_LEVEL = env.str('LOG_LEVEL', 'DEBUG' if DEBUG else 'INFO')
+LOG_PATH = env.str('LOG_PATH', '/tmp/proxy_server')
+LOG_NAME = env.str('LOG_NAME', 'proxy_server.log')
+TIMEZONE = env.str('TIMEZONE', 'UTC')
 
-
-    class ColorFulFormatColMixin:
-        def format_col(self, message_str, level_name):
-            if level_name in COLORS.keys():
-                message_str = COLORS.get(level_name) + message_str + COLORS.get(
-                    'ENDC')
-            return message_str
-
-
-    class ColorfulFormatter(logging.Formatter, ColorFulFormatColMixin):
-        def format(self, record):
-            message_str = super(ColorfulFormatter, self).format(record)
-
-            return self.format_col(message_str, level_name=record.levelname)
-
-    LOG_LEVEL = 'DEBUG' if DEBUG else 'WARNING'
-
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-            },
-        },
-        'loggers': {
-            'proxy_server': {
-                'handlers': ['console'],
-                'level': LOG_LEVEL,
-            },
-        },
-    }
-
-    if LOG_LEVEL == 'DEBUG':
-        LOGGING['formatters'] = {
-            'colorful_console': {
-                'format': '[%(asctime)s-%(levelname)s-%(name)s]: %(message)s (%(filename)s:%(lineno)s)',
-                '()': ColorfulFormatter,
-            },
-        }
-        LOGGING['handlers']['console'] = {
-            'class': 'logging.StreamHandler',
-            'formatter': 'colorful_console',
-        }
-        LOGGING['loggers']['proxy_server'] = {
-            'handlers': ['console'],
-            'level': LOG_LEVEL,
-        }
-
-    logging.config.dictConfig(LOGGING)
+from milvus_celery import config_logger
+config_logger.config(LOG_LEVEL, LOG_PATH, LOG_NAME, TIMEZONE)
