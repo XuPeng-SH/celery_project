@@ -10,7 +10,10 @@ from ConnectionHandler import ConnectionHandler
 api = ConnectionHandler(uri=settings.THRIFTCLIENT_TRANSPORT)
 
 founder = ServiceFounder(namespace=settings.NAMESPACE,
-        pod_patt=settings.ROSERVER_POD_PATT, in_cluster=settings.IN_CLUSTER)
+        pod_patt=settings.ROSERVER_POD_PATT,
+        label_selector=settings.LABEL_SELECTOR,
+        in_cluster=settings.IN_CLUSTER,
+        poll_interval=settings.POLL_INTERVAL)
 
 from MilvusHandler import MilvusHandler
 handler = MilvusHandler()

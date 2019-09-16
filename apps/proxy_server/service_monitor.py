@@ -6,6 +6,7 @@ import urllib3
 import re
 from functools import wraps
 import time
+import copy
 
 
 logger = logging.getLogger(__name__)
@@ -36,11 +37,52 @@ class K8SMixin:
 
 
 class K8SServiceDiscover(threading.Thread, K8SMixin):
-    def __init__(self, message_queue, namespace, in_cluster=False, **kwargs):
+    def __init__(self, message_queue, namespace, label_selector, in_cluster=False, **kwargs):
         K8SMixin.__init__(self, namespace=namespace, in_cluster=in_cluster, **kwargs)
         threading.Thread.__init__(self)
         self.queue = message_queue
         self.terminate = False
+        self.label_selector = label_selector
+        self.poll_interval = kwargs.get('poll_interval', 5)
+
+    def run(self):
+        while not self.terminate:
+            try:
+                pods = self.v1.list_namespaced_pod(namespace=self.namespace, label_selector=self.label_selector)
+                event_message = {
+                    'eType': 'PodHeartBeat',
+                    'events': []
+                }
+                for item in pods.items:
+                    pod = self.v1.read_namespaced_pod(name=item.metadata.name, namespace=self.namespace)
+                    name = pod.metadata.name
+                    ip = pod.status.pod_ip
+                    phase = pod.status.phase
+                    reason = pod.status.reason
+                    message = pod.status.message
+                    ready = True if phase == 'Running' else False
+
+                    pod_event = dict(
+                        pod=name,
+                        ip=ip,
+                        ready=ready,
+                        reason=reason,
+                        message=message
+                    )
+
+                    event_message['events'].append(pod_event)
+
+                self.queue.put(event_message)
+
+
+            except Exception as exc:
+                logger.error(exc)
+
+            time.sleep(self.poll_interval)
+
+    def stop(self):
+        self.terminate = True
+
 
 class K8SEventListener(threading.Thread, K8SMixin):
     def __init__(self, message_queue, namespace, in_cluster=False, **kwargs):
@@ -48,10 +90,15 @@ class K8SEventListener(threading.Thread, K8SMixin):
         threading.Thread.__init__(self)
         self.queue = message_queue
         self.terminate = False
+        self.at_start_up = True
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self.terminate = True
+        self._stop_event.set()
 
     def run(self):
         resource_version = ''
-        start_up = True
         w = watch.Watch()
         for event in w.stream(self.v1.list_namespaced_event, namespace=self.namespace,
                 field_selector='involvedObject.kind=Pod'):
@@ -61,38 +108,16 @@ class K8SEventListener(threading.Thread, K8SMixin):
             resource_version = int(event['object'].metadata.resource_version)
 
             info = dict(
+                    eType='WatchEvent',
                     pod=event['object'].involved_object.name,
                     reason=event['object'].reason,
                     message=event['object'].message,
-                    start_up=start_up,
+                    start_up=self.at_start_up,
             )
+            self.at_start_up = False
             # logger.info('Received event: {}'.format(info))
             self.queue.put(info)
-        '''
-        while not self.terminate:
-            try:
-                w = watch.Watch()
-                for event in w.stream(self.v1.list_namespaced_event, namespace=self.namespace,
-                        field_selector='involvedObject.kind=Pod', _request_timeout=2, resource_version=resource_version):
 
-                    resource_version = int(event['object'].metadata.resource_version)
-
-                    info = dict(
-                            pod=event['object'].involved_object.name,
-                            reason=event['object'].reason,
-                            message=event['object'].message,
-                            start_up=start_up,
-                    )
-                    # logger.info('Received event: {}'.format(info))
-                    self.queue.put(info)
-            except urllib3.exceptions.ReadTimeoutError as err:
-                start_up = False
-                continue
-            except ValueError as err:
-                time.sleep(1)
-                start_up = False
-                continue
-        '''
 
 class EventHandler(threading.Thread):
     def __init__(self, mgr, message_queue, namespace, pod_patt, **kwargs):
@@ -140,7 +165,27 @@ class EventHandler(threading.Thread):
         logger.info('Unregister POD {}'.format(event['pod']))
         self.mgr.delete_pod(name=event['pod'])
 
+    def on_pod_heartbeat(self, event, **kwargs):
+        pod_info = copy.deepcopy(self.mgr.pod_info)
+
+        running_names = set()
+        for each_event in event['events']:
+            if each_event['ready']:
+                self.mgr.add_pod(name=each_event['pod'], ip=each_event['ip'])
+                running_names.add(each_event['pod'])
+            else:
+                self.mgr.delete_pod(name=each_event['pod'])
+
+        to_delete = set(self.mgr.pod_info.keys()) - running_names
+        for name in to_delete:
+            self.mgr.delete_pod(name)
+
+        logger.info(self.mgr.pod_info)
+
     def handle_event(self, event):
+        if event['eType'] == 'PodHeartBeat':
+            return self.on_pod_heartbeat(event)
+
         if not event or (event['reason'] not in ('Started', 'Killing')):
             return self.on_drop(event)
 
@@ -164,7 +209,7 @@ class EventHandler(threading.Thread):
 
 @singleton
 class ServiceFounder(object):
-    def __init__(self, namespace, pod_patt, in_cluster=False, **kwargs):
+    def __init__(self, namespace, pod_patt, label_selector, in_cluster=False, **kwargs):
         self.namespace = namespace
         self.kwargs = kwargs
         self.queue = queue.Queue()
@@ -181,7 +226,19 @@ class ServiceFounder(object):
         self.listener = K8SEventListener(
                 message_queue=self.queue,
                 namespace=self.namespace,
-                v1=self.v1)
+                in_cluster=self.in_cluster,
+                v1=self.v1,
+                **kwargs
+                )
+
+        self.pod_heartbeater = K8SServiceDiscover(
+                message_queue=self.queue,
+                namespace=namespace,
+                label_selector=label_selector,
+                in_cluster=self.in_cluster,
+                v1=self.v1,
+                **kwargs
+                )
 
         self.event_handler = EventHandler(mgr=self,
                 message_queue=self.queue,
@@ -195,18 +252,28 @@ class ServiceFounder(object):
         self.pod_info.pop(name, None)
 
     def start(self):
+        self.listener.daemon = True
         self.listener.start()
         self.event_handler.start()
+        while self.listener.at_start_up:
+            time.sleep(1)
+
+        self.pod_heartbeater.start()
 
     def stop(self):
         self.listener.stop()
+        self.pod_heartbeater.stop()
         self.event_handler.stop()
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    t = ServiceFounder(namespace='xp', pod_patt=".*-ro-servers-.*", in_cluster=False)
+    t = ServiceFounder(namespace='xp', pod_patt=".*-ro-servers-.*", label_selector='tier=ro-servers', in_cluster=False)
     t.start()
-    time.sleep(100)
+    cnt = 20
+    while cnt > 0:
+        print(t.pod_info)
+        time.sleep(2)
+        cnt -= 1
     print(t.pod_info)
     t.stop()

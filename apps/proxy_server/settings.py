@@ -33,6 +33,8 @@ REDIS_PORT = env.int('REDIS_PORT', 6379)
 
 NAMESPACE = env.str("NAMESPACE", 'default')
 ROSERVER_POD_PATT = env.str('ROSERVER_POD_PATT', '.*-ro-servers-.*')
+LABEL_SELECTOR = env.str('LABEL_SELECTOR', 'tier=ro-servers')
+POLL_INTERVAL = env.int('POLL_INTERVAL', 5)
 IN_CLUSTER = env.bool('IN_CLUSTER', True)
 
 LOG_LEVEL = env.str('LOG_LEVEL', 'DEBUG' if DEBUG else 'INFO')
