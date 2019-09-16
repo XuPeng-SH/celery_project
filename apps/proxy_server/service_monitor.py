@@ -21,11 +21,8 @@ def singleton(cls):
         return instances[cls]
     return getinstance
 
-class K8SEventListener(threading.Thread):
-    def __init__(self, message_queue, namespace, in_cluster=False, **kwargs):
-        threading.Thread.__init__(self)
-        self.queue = message_queue
-        self.terminate = False
+class K8SMixin:
+    def __init__(self, namespace, in_cluster=False, **kwargs):
         self.namespace = namespace
         self.in_cluster = in_cluster
         self.kwargs = kwargs
@@ -37,8 +34,20 @@ class K8SEventListener(threading.Thread):
             config.load_incluster_config() if self.in_cluster else config.load_kube_config()
             self.v1 = client.CoreV1Api()
 
-    def stop(self):
-        self.terminate = True
+
+class K8SServiceDiscover(threading.Thread, K8SMixin):
+    def __init__(self, message_queue, namespace, in_cluster=False, **kwargs):
+        K8SMixin.__init__(self, namespace=namespace, in_cluster=in_cluster, **kwargs)
+        threading.Thread.__init__(self)
+        self.queue = message_queue
+        self.terminate = False
+
+class K8SEventListener(threading.Thread, K8SMixin):
+    def __init__(self, message_queue, namespace, in_cluster=False, **kwargs):
+        K8SMixin.__init__(self, namespace=namespace, in_cluster=in_cluster, **kwargs)
+        threading.Thread.__init__(self)
+        self.queue = message_queue
+        self.terminate = False
 
     def run(self):
         resource_version = ''
@@ -170,9 +179,9 @@ class ServiceFounder(object):
         self.v1 = client.CoreV1Api()
 
         self.listener = K8SEventListener(
-                v1=self.v1,
                 message_queue=self.queue,
-                namespace=self.namespace)
+                namespace=self.namespace,
+                v1=self.v1)
 
         self.event_handler = EventHandler(mgr=self,
                 message_queue=self.queue,
