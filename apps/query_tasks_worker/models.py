@@ -49,7 +49,7 @@ class Table(db.Model):
     state = db.Column(Integer)
 
     def files_to_search(self, date_range=None):
-        cond = and_(
+        cond = or_(
                 TableFile.file_type==TableFile.FILE_TYPE_INDEX,
                 TableFile.file_type==TableFile.FILE_TYPE_RAW,
                 TableFile.file_type==TableFile.FILE_TYPE_TO_INDEX,
