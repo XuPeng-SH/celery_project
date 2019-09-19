@@ -50,8 +50,9 @@ class Table(db.Model):
 
     def files_to_search(self, date_range=None):
         cond = and_(
-                TableFile.file_type!=TableFile.FILE_TYPE_TO_DELETE,
-                TableFile.file_type!=TableFile.FILE_TYPE_NEW,
+                TableFile.file_type==TableFile.FILE_TYPE_INDEX,
+                TableFile.file_type==TableFile.FILE_TYPE_RAW,
+                TableFile.file_type==TableFile.FILE_TYPE_TO_INDEX,
         )
         if date_range:
             cond = and_(
