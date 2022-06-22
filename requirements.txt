@@ -11,7 +11,7 @@ importlib-metadata==0.18
 kombu==4.6.3
 marshmallow==2.19.5
 more-itertools==7.0.0
-numpy==1.16.4
+numpy==1.22.0
 packaging==19.0
 pluggy==0.12.0
 py==1.8.0
